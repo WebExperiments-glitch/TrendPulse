@@ -56,7 +56,7 @@
 | 功能 | 描述 |
 |------|------|
 | **AI 趋势总结** | 一键生成榜单分析报告，支持三种风格：「📰 日报」「🐶 吐槽」「⚡ 极简」 |
-| **健康度评分** | 综合活跃度、成熟度、维护度、发布频率的 0–100 评分 |
+| **CHAOSS 健康度评分** | 基于 CHAOSS 社区标准，采用 **目标-问题-指标（GQM）** 框架，五大维度评估：活跃度、响应速度、成熟度、维护质量、社区包容性 |
 | **话题热力地图** | 可视化当前榜单热门标签分布与频次，支持点击筛选 |
 | **话题联动分析** | 自动发现话题共现关系（如 `ai` + `llm` 的联动趋势） |
 | **跨榜追踪** | 识别同时出现在多个榜单中的仓库 |
@@ -220,7 +220,9 @@ npm run build
 | `/api/repo/insights` | GET | `repo` | 仓库洞察（下降原因 + README 迁移检测） |
 | `/api/repo/releases` | GET | `repo` | 最近 5 个 Release |
 | `/api/repo/readme` | GET | `repo` | README 内容（前 8000 字符） |
-| `/api/repos/health` | POST | `{ "repos": [...] }` | 批量仓库健康度评分（带 1 小时缓存） |
+| `/api/repos/health` | POST | `{ "repos": [...] }` | 批量仓库健康度评分（旧版，带 1 小时缓存） |
+| `/api/repos/chaoss-health` | POST | `{ "repos": [...] }` | CHAOSS 五维健康度评分（GQM 框架） |
+| `/api/chaoss/metrics` | GET | - | 返回 CHAOSS 指标框架定义 |
 
 ### 搜索与对比
 
@@ -240,10 +242,12 @@ npm run build
 - `roast` — 🐶 吐槽模式（幽默风格总结）
 - `minimal` — ⚡ 极简模式（仅 TOP 3 速览）
 
-### 健康度评分维度
+### CHAOSS 健康度评分
+
+基于 [CHAOSS](https://chaoss.community/)（Community Health Analytics for Open Source Software）社区标准，采用 **目标-问题-指标（GQM）** 框架：
 
 ```
-综合评分 = 活跃度 × 30% + 成熟度 × 20% + 维护度 × 20% + 发布频率 × 30%
+综合评分 = 活跃度 × 25% + 响应速度 × 20% + 成熟度 × 20% + 维护质量 × 20% + 社区包容性 × 15%
 
 等级划分:
   ≥ 80  → excellent (优秀)
@@ -252,10 +256,17 @@ npm run build
   < 40  → at_risk   (风险)
 ```
 
-**活跃度**：基于 `pushed_at`（最近推送时间），7 天内得满分  
-**成熟度**：基于 `stargazers_count`，5 万星以上得满分  
-**维护度**：基于 `open_issues / (stars + forks)` 比值  
-**发布频率**：基于最近 Release 的发布时间和频率（需 GITHUB_TOKEN）
+**五大 CHAOSS 维度：**
+
+| 维度 | 目标 (Goal) | 关键指标 |
+|------|-------------|----------|
+| 🚀 活跃度 (Activity) | 项目是否保持持续开发活动 | `days_since_push`、`release_frequency` |
+| ⚡ 响应速度 (Responsiveness) | 维护者响应问题的速度 | `days_since_push`、`open_issues_ratio` |
+| ⭐ 成熟度 (Maturity) | 社区规模与项目生命周期 | `stargazers_count`、`days_since_create` |
+| 🐛 维护质量 (Maintenance) | Issue/PR 管理与代码库状态 | `open_issues_ratio`、`archived` |
+| 👥 社区包容性 (Inclusivity) | 对新贡献者的友好程度 | `has_contributing`、`has_license`、`topic_diversity` |
+
+📡 相关 API：`/api/repos/chaoss-health` | `/api/chaoss/metrics`
 
 ---
 
@@ -268,6 +279,7 @@ TrendPulse/
 │
 ├── backend/                        # Python 后端
 │   ├── app.py                      # Flask 主应用 & 所有 API 路由
+│   ├── chaoss_health.py             # CHAOSS GQM 健康评分模块
 │   ├── models.py                   # 内存存储 + JSON 持久化 + 线程安全锁
 │   ├── scraper.py                  # GitHub Trending 爬虫 & Search API
 │   ├── tasks.py                    # APScheduler 定时任务
@@ -327,7 +339,59 @@ TrendPulse/
         └── utils/
             ├── cache.js            # localStorage 缓存工具
             └── export.js           # 数据导出（MD / CSV / JSON / HTML）
+
+└── mcp-server/                    # MCP Server (Model Context Protocol)
+    ├── package.json               # 依赖配置
+    ├── tsconfig.json              # TypeScript 配置
+    └── src/
+        └── index.ts               # MCP Server 入口（7 个 Tools）
 ```
+
+---
+
+## 🔌 MCP Server
+
+TrendPulse 提供 MCP (Model Context Protocol) Server，允许 AI 助手（Claude Desktop、Cursor 等）直接调用 TrendPulse 的能力。
+
+### 配置方法
+
+在 AI 客户端的 MCP 配置文件中添加：
+
+```json
+{
+  "mcpServers": {
+    "trendpulse": {
+      "command": "node",
+      "args": ["path/to/mcp-server/dist/index.js"],
+      "env": {
+        "TRENDPULSE_API_URL": "http://localhost:5000/api"
+      }
+    }
+  }
+}
+```
+
+### 可用 Tools
+
+| Tool | 描述 |
+|------|------|
+| `get_trending` | 获取每日/每周/上升/下降/跨榜热门仓库 |
+| `search_repos` | GitHub 仓库搜索 |
+| `compare_repos` | 并排对比两个仓库 |
+| `get_chaoss_health` | CHAOSS 五维健康度评分 |
+| `get_summary` | AI 风格趋势分析报告（日报/吐槽/极简） |
+| `get_chaoss_metrics_info` | 获取 CHAOSS 指标框架定义 |
+| `get_repo_detail` | 获取仓库详细信息 |
+
+### 使用示例
+
+在支持的 AI 客户端中直接对话：
+
+> "帮我分析一下最近一周 AI 领域增长最快的项目"
+>
+> "对比一下 langchain 和 llamaindex 的社区健康度"
+>
+> "用 CHAOSS 框架评估 pytorch/pytorch 的项目健康度"
 
 ---
 
@@ -417,6 +481,20 @@ server: {
 | `perf:` | 性能优化 |
 | `test:` | 测试相关 |
 | `chore:` | 构建/工具链 |
+
+---
+
+## 🗺 路线图 (Roadmap)
+
+- [x] GitHub Trending 多维度榜单（日/周/上升/下降/跨榜）
+- [x] CHAOSS 五维健康度评分（活跃度/响应速度/成熟度/维护质量/包容性）
+- [x] AI 趋势总结（日报/吐槽/极简三种风格）
+- [x] MCP Server 基础框架（7 个 Tools）
+- [ ] **CHAOSS 深度集成**：添加 `Issue Response Time`、`Pull Request Resolution Duration` 等细分指标
+- [ ] **MCP Server 发布**：集成到 Claude Desktop / Cursor 官方目录
+- [ ] **历史趋势对比**：跨周期环比、同比趋势线
+- [ ] **企业级部署**：Docker 化 + 数据库持久化（SQLite/PostgreSQL）
+- [ ] **多源数据融合**：集成 GitStats、OpenSSF Scorecard 等外部数据源
 
 ---
 

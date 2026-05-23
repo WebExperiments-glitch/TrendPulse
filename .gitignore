@@ -8,6 +8,7 @@ backend/history/
 node_modules/
 dist/
 dist-ssr/
+!mcp-server/dist/
 
 *.local
 .env

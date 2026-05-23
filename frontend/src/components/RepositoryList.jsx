@@ -8,7 +8,7 @@ import RepoDetailModal from './RepoDetailModal';
 import RandomDiscover from './RandomDiscover';
 import PosterGenerator from './PosterGenerator';
 import SummaryModal from './SummaryModal';
-import { getReposHealth } from '../api/api';
+import { getReposChaossHealth } from '../api/api';
 
 const SUMMARY_PERIODS = ['daily', 'weekly', 'rising', 'declining'];
 
@@ -24,9 +24,9 @@ const RepositoryList = ({ repos, period }) => {
     const names = repos.map((r) => r.name).filter(Boolean);
     if (names.length === 0) return;
     const controller = new AbortController();
-    getReposHealth(names, controller.signal).then((res) => {
+    getReposChaossHealth(names, controller.signal).then((res) => {
       const map = {};
-      (res.data || []).forEach((h, i) => { if (h) map[names[i]] = h; });
+      (res.data.results || []).forEach((h, i) => { if (h) map[names[i]] = h; });
       setHealthMap(map);
     }).catch((err) => {
       if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;

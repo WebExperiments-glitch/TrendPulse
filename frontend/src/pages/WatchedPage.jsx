@@ -4,7 +4,7 @@ import { ReloadOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons';
 import RepositoryCard from '../components/RepositoryCard';
 import FilterBar from '../components/FilterBar';
 import { useWatch } from '../contexts/WatchContext';
-import { getReposHealth } from '../api/api';
+import { getReposChaossHealth } from '../api/api';
 
 const WatchedPage = () => {
   const { watchlist, alerts, refreshAlerts, getAlert } = useWatch();
@@ -16,9 +16,9 @@ const WatchedPage = () => {
     if (watchlist.length === 0) return;
     const names = watchlist.map((r) => r.name).filter(Boolean);
     const controller = new AbortController();
-    getReposHealth(names, controller.signal).then((res) => {
+    getReposChaossHealth(names, controller.signal).then((res) => {
       const map = {};
-      (res.data || []).forEach((h, i) => { if (h) map[names[i]] = h; });
+      (res.data.results || []).forEach((h, i) => { if (h) map[names[i]] = h; });
       setHealthMap(map);
     }).catch((err) => {
       if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;

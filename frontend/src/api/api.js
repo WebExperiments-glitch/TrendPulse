@@ -32,6 +32,8 @@ export const getRepoDetail = (repo, signal) => withRetry((s) => instance.get('/r
 export const getRepoInsights = (repo, signal) => withRetry((s) => instance.get('/repo/insights', { params: { repo }, signal: s }), 3, 1000, signal);
 export const getRepoReleases = (repo, signal) => withRetry((s) => instance.get('/repo/releases', { params: { repo }, signal: s }), 3, 1000, signal);
 export const getReposHealth = (repos, signal) => withRetry((s) => instance.post('/repos/health', { repos }, { signal: s, timeout: 30000 }), 2, 2000, signal);
+export const getReposChaossHealth = (repos, signal) => withRetry((s) => instance.post('/repos/chaoss-health', { repos }, { signal: s, timeout: 30000 }), 2, 2000, signal);
+export const getChaossMetrics = (signal) => withRetry((s) => instance.get('/chaoss/metrics', { signal: s }), 2, 1000, signal);
 export const compareRepos = (repo1, repo2, signal) => withRetry((s) => instance.get('/compare', { params: { repo1, repo2 }, signal: s }), 3, 1000, signal);
 export const searchRepos = (q, signal) => withRetry((s) => instance.get('/search', { params: { q }, signal: s }), 3, 1000, signal);
 export const getRepoHistory = (repo, days, signal) => withRetry((s) => instance.get('/repo/history', { params: { repo, days }, signal: s }), 3, 1000, signal);

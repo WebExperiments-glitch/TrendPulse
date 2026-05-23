@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from models import storage, HISTORY_DIR
 from tasks import start_scheduler
 from scraper import GitHubTrendingScraper
+from chaoss_health import compute_chaoss_health, CHAOSS_METRICS
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
@@ -1263,6 +1264,63 @@ def get_summary():
             'has_history': has_history,
         }
     })
+
+@app.route('/api/repos/chaoss-health', methods=['POST'])
+def get_repos_chaoss_health():
+    data = request.get_json(silent=True) or {}
+    repos = data.get('repos', [])
+    if not repos or not isinstance(repos, list):
+        return jsonify({'error': '请提供 repos 数组'}), 400
+    repos = repos[:50]
+    results = []
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {executor.submit(compute_chaoss_health, r): r for r in repos}
+        for future in as_completed(futures):
+            info = future.result()
+            if info:
+                results.append(info)
+    result_map = {r['name']: r for r in results}
+    return jsonify({
+        'framework': 'CHAOSS',
+        'version': '0.1',
+        'docs': 'https://chaoss.community/',
+        'results': [result_map.get(r) for r in repos],
+    })
+
+
+@app.route('/api/chaoss/metrics', methods=['GET'])
+def get_chaoss_metrics():
+    return jsonify({
+        'framework': 'CHAOSS',
+        'description': 'CHAOSS (Community Health Analytics for Open Source Software) 社区驱动开源项目健康评估标准',
+        'docs': 'https://chaoss.community/',
+        'goal_question_metric': {
+            'description': '采用目标-问题-指标(GQM)框架，确保每个评分维度有明确的目标和可验证的问题',
+            'dimensions': {k: {
+                'name': v['name'],
+                'goal': v['goal'],
+                'question': v['question'],
+                'chaoss_ref': v['chaoss_ref'],
+                'indicators': v['indicators'],
+            } for k, v in CHAOSS_METRICS.items()},
+        },
+        'scoring': {
+            'weights': {
+                'activity': 0.25,
+                'responsiveness': 0.20,
+                'maturity': 0.20,
+                'maintenance': 0.20,
+                'inclusivity': 0.15,
+            },
+            'levels': {
+                'excellent': {'min': 80, 'label': '优秀', 'color': '#389e0d'},
+                'healthy': {'min': 60, 'label': '健康', 'color': '#52c41a'},
+                'fair': {'min': 40, 'label': '一般', 'color': '#d48806'},
+                'at_risk': {'min': 0, 'label': '风险', 'color': '#cf1322'},
+            },
+        },
+    })
+
 
 if __name__ == '__main__':
     # Start the Flask server
