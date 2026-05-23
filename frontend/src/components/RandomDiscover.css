@@ -1,0 +1,107 @@
+.random-discover-wrapper {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.random-discover-btn {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+  box-shadow: 0 4px 20px rgba(114, 46, 209, 0.4);
+  transition: all var(--transition-bounce);
+  background: var(--gradient-accent);
+  border: none;
+  position: relative;
+}
+
+.random-discover-btn::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  filter: blur(8px);
+}
+
+.random-discover-btn:hover::after {
+  opacity: 0.5;
+}
+
+.random-discover-btn:hover {
+  transform: scale(1.12) rotate(8deg);
+  box-shadow: 0 8px 32px rgba(114, 46, 209, 0.55);
+}
+
+.random-discover-btn.animating {
+  animation: shake 0.12s infinite;
+  background: linear-gradient(135deg, #f5222d, #722ed1);
+  box-shadow: 0 4px 24px rgba(245, 34, 45, 0.5);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-5deg); }
+  75% { transform: translateX(5px) rotate(5deg); }
+}
+
+.random-discover-label {
+  font-size: 11px;
+  color: #722ed1;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.random-preview {
+  position: absolute;
+  bottom: 70px;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: floatUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.random-preview-icon {
+  color: #fadb14;
+  font-size: 16px;
+  animation: pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.2); }
+}
+
+.random-preview-name {
+  font-weight: 700;
+}
+
+@keyframes floatUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
