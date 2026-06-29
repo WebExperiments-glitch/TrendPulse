@@ -22,7 +22,7 @@ const StarSparkline = ({ stars, period }) => {
     let cancelled = false;
     getStarHistory(stars, period)
       .then((res) => {
-        if (!cancelled) setHistory(res.data);
+        if (!cancelled) setHistory(res.data?.history || res.data);
       })
       .catch(() => {
         if (!cancelled) setHistory(null);
@@ -30,15 +30,16 @@ const StarSparkline = ({ stars, period }) => {
     return () => { cancelled = true; };
   }, [stars, period]);
 
-  if (!history || history.length === 0) return null;
+  const historyArray = Array.isArray(history) ? history : (history?.history || []);
+  if (!historyArray || historyArray.length === 0) return null;
 
-  const isUp = history[history.length - 1]?.stars >= history[0]?.stars;
+  const isUp = historyArray[historyArray.length - 1]?.stars >= historyArray[0]?.stars;
   const lineColor = isUp ? '#52c41a' : '#ff4d4f';
   const bgColor = isUp ? 'rgba(82, 196, 26, 0.08)' : 'rgba(255, 77, 79, 0.08)';
   const tickColor = isDark ? '#aaa' : '#999';
 
-  const labels = history.map((_, i) => i % 15 === 0 ? history[i].date.slice(5) : '');
-  const data = history.map((d) => d.stars);
+  const labels = historyArray.map((_, i) => i % 15 === 0 ? historyArray[i].date.slice(5) : '');
+  const data = historyArray.map((d) => d.stars);
 
   const chartData = {
     labels,
@@ -67,7 +68,7 @@ const StarSparkline = ({ stars, period }) => {
         titleFont: { size: 10 },
         bodyFont: { size: 10 },
         callbacks: {
-          title: (items) => history[items[0].dataIndex]?.date,
+          title: (items) => historyArray[items[0].dataIndex]?.date,
           label: (item) => `${item.raw.toLocaleString()} Stars`,
         },
       },

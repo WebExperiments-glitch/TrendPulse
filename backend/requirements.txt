@@ -4,3 +4,5 @@ requests
 beautifulsoup4
 APScheduler
 python-dateutil
+SQLAlchemy>=2.0
+pytest>=8.0

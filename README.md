@@ -5,11 +5,11 @@
 <h1 align="center">TrendPulse</h1>
 
 <p align="center">
-  <strong>GitHub 开源趋势洞察平台 · V0.1</strong>
+  <strong>GitHub 开源趋势洞察平台 · V0.1.1</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-0.1.1-blue" alt="Version" />
   <img src="https://img.shields.io/badge/Python-3.7+-blue?logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite" />
@@ -109,12 +109,7 @@ graph TB
     API -->|读取| Storage
 ```
 
----
-
 ## 🛠 技术栈
-
-### 前端
-
 | 技术 | 版本 | 用途 |
 |------|------|------|
 | React | 19.x | UI 框架 |
@@ -123,8 +118,6 @@ graph TB
 | React Router | 7.x | 路由管理 |
 | Chart.js + react-chartjs-2 | 4.x / 5.x | 数据可视化 |
 | Axios | 1.x | HTTP 请求（含自动重试） |
-
-### 后端
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
@@ -136,117 +129,105 @@ graph TB
 | Requests | - | HTTP 请求 |
 | python-dateutil | - | 日期计算 |
 
----
-
+技术	版本	用途
+Python	3.7+	运行环境
+Flask	3.x	Web 框架
+Flask-CORS	-	跨域支持
+BeautifulSoup4	-	HTML 解析（Trending 页面）
+APScheduler	-	定时任务调度
+Requests	-	HTTP 请求
+python-dateutil	-	日期计算
 ## 🚀 快速开始
+环境要求
+Python 3.7+
 
-### 环境要求
+Node.js 16+
 
-- **Python** 3.7+
-- **Node.js** 16+
-- **npm**
+npm
 
-### 方式一：一键启动（推荐）
-
-```bash
+方式一：一键启动（推荐）
+bash
 # Windows 用户双击运行
 start.bat
-```
-
 脚本自动完成：
-1. 检查端口 5000 / 5173 是否可用
-2. 安装缺失依赖
-3. 启动后端和前端服务
-4. 自动打开浏览器
 
-### 方式二：手动启动
+检查端口 5000 / 5173 是否可用
 
-**1. 启动后端**
+安装缺失依赖
 
-```bash
+启动后端和前端服务
+
+自动打开浏览器
+
+方式二：手动启动
+1. 启动后端
+
+bash
 cd backend
 pip install -r requirements.txt
 python app.py
-```
+后端运行在 http://localhost:5000
 
-后端运行在 `http://localhost:5000`
+2. 启动前端
 
-**2. 启动前端**
-
-```bash
+bash
 cd frontend
 npm install
 npm run dev
-```
+前端运行在 http://localhost:5173
 
-前端运行在 `http://localhost:5173`
-
-### 生产构建
-
-```bash
+生产构建
+bash
 cd frontend
 npm run build
-```
-
-构建产物输出到 `frontend/dist/`。
-
----
+构建产物输出到 frontend/dist/。
 
 ## 📡 API 文档
-
-### 服务信息
-
+服务信息
 | 端点 | 方法 | 描述 |
 |------|------|------|
-| `/api/version` | GET | 获取应用名称与版本号 |
-
-### 趋势数据
-
+| /api/version | GET | 获取应用名称与版本号 |
+趋势数据
 | 端点 | 方法 | 描述 |
 |------|------|------|
-| `/api/trending/daily` | GET | 每日热点（Top 50） |
-| `/api/trending/weekly` | GET | 每周热点（Top 50） |
-| `/api/trending/rising` | GET | 上升趋势（Top 50） |
-| `/api/trending/declining` | GET | 下降趋势（Top 50） |
-| `/api/trending/hottest` | GET | 跨榜热度（去重合并日/周/上升榜） |
-
-### 仓库详情
-
+| /api/trending/daily | GET | 每日热点（Top 50） |
+| /api/trending/weekly | GET | 每周热点（Top 50） |
+| /api/trending/rising | GET | 上升趋势（Top 50） |
+| /api/trending/declining | GET | 下降趋势（Top 50） |
+| /api/trending/hottest | GET | 跨榜热度（去重合并日/周/上升榜） |
+仓库详情
 | 端点 | 方法 | 参数 | 描述 |
 |------|------|------|------|
-| `/api/repo/detail` | GET | `repo` (owner/repo) | 仓库基本信息（含 pushed_at、archived） |
-| `/api/repo/star-history` | GET | `stars`, `period`, `days` | Star 模拟历史数据 |
-| `/api/repo/history` | GET | `repo`, `days` | 真实 Star 历史快照 |
-| `/api/repo/insights` | GET | `repo` | 仓库洞察（下降原因 + README 迁移检测） |
-| `/api/repo/releases` | GET | `repo` | 最近 5 个 Release |
-| `/api/repo/readme` | GET | `repo` | README 内容（前 8000 字符） |
-| `/api/repos/health` | POST | `{ "repos": [...] }` | 批量仓库健康度评分（旧版，带 1 小时缓存） |
-| `/api/repos/chaoss-health` | POST | `{ "repos": [...] }` | CHAOSS 五维健康度评分（GQM 框架） |
-| `/api/chaoss/metrics` | GET | - | 返回 CHAOSS 指标框架定义 |
-
-### 搜索与对比
-
+| /api/repo/detail | GET | repo (owner/repo) | 仓库基本信息（含 pushed_at、archived） |
+| /api/repo/star-history | GET | stars, period, days | Star 模拟历史数据 |
+| /api/repo/history | GET | repo, days | 真实 Star 历史快照 |
+| /api/repo/insights | GET | repo | 仓库洞察（下降原因 + README 迁移检测） |
+| /api/repo/releases | GET | repo | 最近 5 个 Release |
+| /api/repo/readme | GET | repo | README 内容（前 8000 字符） |
+| /api/repos/health | POST | { "repos": [...] } | 批量仓库健康度评分（旧版，带 1 小时缓存） |
+| /api/repos/chaoss-health | POST | { "repos": [...] } | CHAOSS 五维健康度评分（GQM 框架） |
+| /api/chaoss/metrics | GET | - | 返回 CHAOSS 指标框架定义 |
+搜索与对比
 | 端点 | 方法 | 参数 | 描述 |
 |------|------|------|------|
-| `/api/search` | GET | `q` | GitHub 仓库搜索 |
-| `/api/compare` | GET | `repo1`, `repo2` | 两仓库对比 |
-
-### 智能总结
-
+| /api/search | GET | q | GitHub 仓库搜索 |
+| /api/compare | GET | repo1, repo2 | 两仓库对比 |
+智能总结
 | 端点 | 方法 | 参数 | 描述 |
 |------|------|------|------|
-| `/api/summary` | GET | `period`, `tone` | 生成榜单趋势分析报告 |
+| /api/summary | GET | period, tone | 生成榜单趋势分析报告 |
+tone 可选值：
 
-`tone` 可选值：
-- `daily` — 📰 日报模式（完整分析：TOP 5、话题、排名变化、跨榜、暗流）
-- `roast` — 🐶 吐槽模式（幽默风格总结）
-- `minimal` — ⚡ 极简模式（仅 TOP 3 速览）
+daily — 📰 日报模式（完整分析：TOP 5、话题、排名变化、跨榜、暗流）
 
-### CHAOSS 健康度评分
+roast — 🐶 吐槽模式（幽默风格总结）
 
-基于 [CHAOSS](https://chaoss.community/)（Community Health Analytics for Open Source Software）社区标准，采用 **目标-问题-指标（GQM）** 框架：
+minimal — ⚡ 极简模式（仅 TOP 3 速览）
 
-```
+CHAOSS 健康度评分
+基于 CHAOSS（Community Health Analytics for Open Source Software）社区标准，采用 目标-问题-指标（GQM） 框架：
+
+text
 综合评分 = 活跃度 × 25% + 响应速度 × 20% + 成熟度 × 20% + 维护质量 × 20% + 社区包容性 × 15%
 
 等级划分:
@@ -254,25 +235,19 @@ npm run build
   ≥ 60  → healthy   (健康)
   ≥ 40  → fair      (一般)
   < 40  → at_risk   (风险)
-```
-
-**五大 CHAOSS 维度：**
+五大 CHAOSS 维度：
 
 | 维度 | 目标 (Goal) | 关键指标 |
-|------|-------------|----------|
-| 🚀 活跃度 (Activity) | 项目是否保持持续开发活动 | `days_since_push`、`release_frequency` |
-| ⚡ 响应速度 (Responsiveness) | 维护者响应问题的速度 | `days_since_push`、`open_issues_ratio` |
-| ⭐ 成熟度 (Maturity) | 社区规模与项目生命周期 | `stargazers_count`、`days_since_create` |
-| 🐛 维护质量 (Maintenance) | Issue/PR 管理与代码库状态 | `open_issues_ratio`、`archived` |
-| 👥 社区包容性 (Inclusivity) | 对新贡献者的友好程度 | `has_contributing`、`has_license`、`topic_diversity` |
-
-📡 相关 API：`/api/repos/chaoss-health` | `/api/chaoss/metrics`
-
----
+|------|------------|----------|
+| 🚀 活跃度 (Activity) | 项目是否保持持续开发活动 | days_since_push、release_frequency |
+| ⚡ 响应速度 (Responsiveness) | 维护者响应问题的速度 | days_since_push、open_issues_ratio |
+| ⭐ 成熟度 (Maturity) | 社区规模与项目生命周期 | stargazers_count、days_since_create |
+| 🐛 维护质量 (Maintenance) | Issue/PR 管理与代码库状态 | open_issues_ratio、archived |
+| 👥 社区包容性 (Inclusivity) | 对新贡献者的友好程度 | has_contributing、has_license、topic_diversity |
+📡 相关 API：/api/repos/chaoss-health | /api/chaoss/metrics
 
 ## 📁 项目结构
-
-```
+text
 TrendPulse/
 ├── start.bat                       # 一键启动脚本
 ├── README.md                       # 项目文档
@@ -293,7 +268,7 @@ TrendPulse/
 │
 └── frontend/                       # React 前端
     ├── index.html                  # HTML 入口
-    ├── package.json                # 依赖配置 (V0.1.0)
+    ├── package.json                # 依赖配置 (V0.1.1)
     ├── vite.config.js              # Vite 配置（含 API 代理）
     ├── eslint.config.js            # ESLint 配置
     └── src/
@@ -345,19 +320,13 @@ TrendPulse/
     ├── tsconfig.json              # TypeScript 配置
     └── src/
         └── index.ts               # MCP Server 入口（7 个 Tools）
-```
-
----
-
 ## 🔌 MCP Server
-
 TrendPulse 提供 MCP (Model Context Protocol) Server，允许 AI 助手（Claude Desktop、Cursor 等）直接调用 TrendPulse 的能力。
 
-### 配置方法
-
+配置方法
 在 AI 客户端的 MCP 配置文件中添加：
 
-```json
+json
 {
   "mcpServers": {
     "trendpulse": {
@@ -369,82 +338,67 @@ TrendPulse 提供 MCP (Model Context Protocol) Server，允许 AI 助手（Claud
     }
   }
 }
-```
-
-### 可用 Tools
-
-| Tool | 描述 |
-|------|------|
-| `get_trending` | 获取每日/每周/上升/下降/跨榜热门仓库 |
-| `search_repos` | GitHub 仓库搜索 |
-| `compare_repos` | 并排对比两个仓库 |
-| `get_chaoss_health` | CHAOSS 五维健康度评分 |
-| `get_summary` | AI 风格趋势分析报告（日报/吐槽/极简） |
-| `get_chaoss_metrics_info` | 获取 CHAOSS 指标框架定义 |
-| `get_repo_detail` | 获取仓库详细信息 |
-
-### 使用示例
-
+可用 Tools
+Tool	描述
+get_trending	获取每日/每周/上升/下降/跨榜热门仓库
+search_repos	GitHub 仓库搜索
+compare_repos	并排对比两个仓库
+get_chaoss_health	CHAOSS 五维健康度评分
+get_summary	AI 风格趋势分析报告（日报/吐槽/极简）
+get_chaoss_metrics_info	获取 CHAOSS 指标框架定义
+get_repo_detail	获取仓库详细信息
+使用示例
 在支持的 AI 客户端中直接对话：
 
-> "帮我分析一下最近一周 AI 领域增长最快的项目"
->
-> "对比一下 langchain 和 llamaindex 的社区健康度"
->
-> "用 CHAOSS 框架评估 pytorch/pytorch 的项目健康度"
+"帮我分析一下最近一周 AI 领域增长最快的项目"
 
----
+"对比一下 langchain 和 llamaindex 的社区健康度"
+
+"用 CHAOSS 框架评估 pytorch/pytorch 的项目健康度"
 
 ## 🎨 设计风格
+玻璃态（Glass Morphism） 设计语言：
 
-**玻璃态（Glass Morphism）** 设计语言：
+半透明卡片 — backdrop-filter: blur() + saturate() 毛玻璃效果
 
-- **半透明卡片** — `backdrop-filter: blur()` + `saturate()` 毛玻璃效果
-- **渐变点缀** — 蓝-紫-粉渐变用于顶部装饰条、按钮、海报
-- **微交互** — 卡片悬浮上移、按钮缩放、渐变条渐显
-- **CSS 变量体系** — 统一管理颜色、阴影、圆角、过渡时间
-- **入场动画** — `fadeInUp` 关键帧，卡片依次淡入上移
-- **暗色模式** — 完整亮色/暗色主题切换
+渐变点缀 — 蓝-紫-粉渐变用于顶部装饰条、按钮、海报
 
----
+微交互 — 卡片悬浮上移、按钮缩放、渐变条渐显
+
+CSS 变量体系 — 统一管理颜色、阴影、圆角、过渡时间
+
+入场动画 — fadeInUp 关键帧，卡片依次淡入上移
+
+暗色模式 — 完整亮色/暗色主题切换
 
 ## ⚙️ 配置说明
+GitHub Token（可选）
+设置环境变量 GITHUB_TOKEN 提升 API 调用限额：
 
-### GitHub Token（可选）
-
-设置环境变量 `GITHUB_TOKEN` 提升 API 调用限额：
-
-| 模式 | 限额 |
-|------|------|
-| 未认证 | 60 次/小时 |
-| 已认证 | 5,000 次/小时 |
-
-```bash
+模式	限额
+未认证	60 次/小时
+已认证	5,000 次/小时
+bash
 # Windows PowerShell
 $env:GITHUB_TOKEN = "ghp_xxxxxxxxxxxx"
 
 # Linux / macOS
 export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
-```
+拥有 Token 时还将解锁 Release 发布频率分析 功能。
 
-拥有 Token 时还将解锁 **Release 发布频率分析** 功能。
-
-### 定时任务频率
-
+定时任务频率
 | 数据类型 | 更新间隔 | 最低数据量要求 |
-|----------|----------|----------------|
+| ---------- |
 | 每日热点 | 每 1 小时 | ≥ 30 个仓库 |
 | 上升趋势 | 每 2 小时 | ≥ 30 个仓库 |
 | 每周热点 | 每 3 小时 | ≥ 30 个仓库 |
 | 下降趋势 | 每 4 小时 | ≥ 30 个仓库 |
-
 每次更新前自动保存历史快照，支持周/月环比分析。
 
-### 前端代理
+前端代理
+vite.config.js 已配置开发代理：
 
-`vite.config.js` 已配置开发代理：
-
-```javascript
+javascript
 server: {
   proxy: {
     '/api': {
@@ -453,57 +407,75 @@ server: {
     },
   },
 }
-```
+## 📋 版本更新记录
+V0.1.1（当前版本） – 2026-06-29
+本次版本为缺陷修复补丁，提升了稳定性与健壮性，无新增功能，完全兼容 V0.1.0。
 
----
+主要修复内容：
+
+CORS 跨域：后端白名单支持所有本地开发端口（如 5174），避免因端口变化导致请求被拦截。
+
+UI 细节：健康徽章 tooltip 中的比例值自动格式化为百分比，布尔值显示为图标，增强可读性。
+
+并发性能：相同仓库的并发请求共享同一网络调用，避免重复消耗 GitHub API 配额。
+
+评分逻辑：CHAOSS 包容性维度最低分从 30 调整为 0，空仓库评分更加合理。
+
+误导性标题：对比页“90 天增长趋势”改为“Star 走势参考（模拟）”，消除误解。
+
+错误处理：搜索 API 正确返回 403 状态码；前端重试不再刷新页面，改为重新搜索。
+
+安全性：HTML 导出时对用户内容进行转义，防止 XSS 注入。
+
+数值精度：1.2k 格式的 Star 数量解析修正，避免截断误差。
+
+其他改进：空 Token 不再发送 Authorization 头；models.py 空值保护；部分组件避免不必要的重复请求。
 
 ## 🤝 贡献指南
+开发流程
+Fork 本仓库
 
-### 开发流程
+创建特性分支：git checkout -b feature/amazing-feature
 
-1. **Fork** 本仓库
-2. 创建特性分支：`git checkout -b feature/amazing-feature`
-3. 提交更改：`git commit -m 'feat: add amazing feature'`
-4. 推送分支：`git push origin feature/amazing-feature`
-5. 提交 **Pull Request**
+提交更改：git commit -m 'feat: add amazing feature'
 
-### Commit 规范
+推送分支：git push origin feature/amazing-feature
 
-本项目推荐 [Conventional Commits](https://www.conventionalcommits.org/)：
+提交 Pull Request
+
+Commit 规范
+本项目推荐 Conventional Commits：
 
 | 类型 | 说明 |
 |------|------|
-| `feat:` | 新功能 |
-| `fix:` | Bug 修复 |
-| `style:` | 样式调整 |
-| `refactor:` | 代码重构 |
-| `docs:` | 文档更新 |
-| `perf:` | 性能优化 |
-| `test:` | 测试相关 |
-| `chore:` | 构建/工具链 |
-
----
-
+| feat: | 新功能 |
+| fix: | Bug 修复 |
+| style: | 样式调整 |
+| refactor: | 代码重构 |
+| docs: | 文档更新 |
+| perf: | 性能优化 |
+| test: | 测试相关 |
+| chore: | 构建/工具链 |
 ## 🗺 路线图 (Roadmap)
+✅ ✅ GitHub Trending 多维度榜单（日/周/上升/下降/跨榜）
 
-- [x] GitHub Trending 多维度榜单（日/周/上升/下降/跨榜）
-- [x] CHAOSS 五维健康度评分（活跃度/响应速度/成熟度/维护质量/包容性）
-- [x] AI 趋势总结（日报/吐槽/极简三种风格）
-- [x] MCP Server 基础框架（7 个 Tools）
-- [ ] **CHAOSS 深度集成**：添加 `Issue Response Time`、`Pull Request Resolution Duration` 等细分指标
-- [ ] **MCP Server 发布**：集成到 Claude Desktop / Cursor 官方目录
-- [ ] **历史趋势对比**：跨周期环比、同比趋势线
-- [ ] **企业级部署**：Docker 化 + 数据库持久化（SQLite/PostgreSQL）
-- [ ] **多源数据融合**：集成 GitStats、OpenSSF Scorecard 等外部数据源
+✅ ✅ CHAOSS 五维健康度评分（活跃度/响应速度/成熟度/维护质量/包容性）
 
----
+✅ ✅ AI 趋势总结（日报/吐槽/极简三种风格）
+
+✅ ✅ MCP Server 基础框架（7 个 Tools）
+
+CHAOSS 深度集成：添加 Issue Response Time、Pull Request Resolution Duration 等细分指标
+
+MCP Server 发布：集成到 Claude Desktop / Cursor 官方目录
+
+历史趋势对比：跨周期环比、同比趋势线
+
+企业级部署：Docker 化 + 数据库持久化（SQLite/PostgreSQL）
+
+多源数据融合：集成 GitStats、OpenSSF Scorecard 等外部数据源
 
 ## 📄 许可证
-
 MIT License
 
----
-
-<p align="center">
-  <sub>Made with ❤️ · TrendPulse V0.1</sub>
-</p>
+<p align="center"> <sub>Made with ❤️ · TrendPulse V0.1.1</sub> </p>

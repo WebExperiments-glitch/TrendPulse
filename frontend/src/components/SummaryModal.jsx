@@ -204,8 +204,8 @@ const SummaryModal = ({ period, visible, onClose }) => {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (/^\|.*\|$/.test(line) && !lines.slice(Math.max(0, i - 1), i).some((l) => /^\|.*\|$/.test(l) && l.split('|').filter((c) => c.trim() !== '').every((c) => /^-+$/.test(c)))) {
-      // Start of a table: collect consecutive table lines
+    // 表格检测：直接收拢所有连续的 |...| 行
+    if (/^\|.*\|$/.test(line)) {
       const tableRows = [];
       let j = i;
       while (j < lines.length && /^\|.*\|$/.test(lines[j])) {

@@ -19,6 +19,9 @@ const RepositoryList = ({ repos, period }) => {
   const [posterVisible, setPosterVisible] = useState(false);
   const [summaryVisible, setSummaryVisible] = useState(false);
 
+  // 用仓库列表的指纹作为依赖，避免 filter 改变时重跑健康度接口
+  const reposKey = useMemo(() => (repos || []).map((r) => r.name).filter(Boolean).join('|'), [repos]);
+
   useEffect(() => {
     if (!repos || repos.length === 0) return;
     const names = repos.map((r) => r.name).filter(Boolean);
@@ -32,7 +35,7 @@ const RepositoryList = ({ repos, period }) => {
       if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
     });
     return () => { controller.abort(); };
-  }, [repos]);
+  }, [reposKey]);
 
   const filteredRepos = useMemo(() => {
     return repos.filter((repo) => {

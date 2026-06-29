@@ -42,14 +42,15 @@ const RepoDetailModal = ({ repo, visible, onClose }) => {
     });
   }, [visible, repo]);
 
-  const starHistoryChart = history && history.length > 0 ? (() => {
-    const isUp = history[history.length - 1]?.stars >= history[0]?.stars;
+  const starHistoryData = history ? (history.history || history) : null;
+  const starHistoryChart = starHistoryData && starHistoryData.length > 0 ? (() => {
+    const isUp = starHistoryData[starHistoryData.length - 1]?.stars >= starHistoryData[0]?.stars;
     const lineColor = isUp ? '#52c41a' : '#ff4d4f';
     return {
       data: {
-        labels: history.map((_, i) => i % 15 === 0 ? history[i].date?.slice(5) : ''),
+        labels: starHistoryData.map((_, i) => i % 15 === 0 ? (starHistoryData[i].date || '').slice(5) : ''),
         datasets: [{
-          data: history.map((d) => d.stars),
+          data: starHistoryData.map((d) => d.stars),
           borderColor: lineColor,
           backgroundColor: isUp ? 'rgba(82,196,26,0.08)' : 'rgba(255,77,79,0.08)',
           fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.3,

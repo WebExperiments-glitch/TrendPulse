@@ -4,6 +4,11 @@ __pycache__/
 
 backend/github_trending_data.json
 backend/history/
+backend/*.db
+backend/*.db-journal
+backend/*.db-wal
+backend/__pycache__/
+backend/.pytest_cache/
 
 node_modules/
 dist/

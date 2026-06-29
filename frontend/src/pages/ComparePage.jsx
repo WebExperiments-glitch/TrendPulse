@@ -24,11 +24,12 @@ const ComparePage = () => {
       }
       const r1 = res.data.repo1;
       const r2 = res.data.repo2;
+      // 传入 repo 名以便后端走真实 Star 历史；拿不到时再回退到模拟数据
       const [h1, h2] = await Promise.all([
-        getStarHistory(r1.stars, 'daily'),
-        getStarHistory(r2.stars, 'daily'),
+        getStarHistory(r1.stars, 'daily', null, r1.name),
+        getStarHistory(r2.stars, 'daily', null, r2.name),
       ]);
-      setResult({ r1, r2, h1: h1.data, h2: h2.data });
+      setResult({ r1, r2, h1: h1.data, h2: h2.data, real: h1.data?.source === 'star-history.com / GitHub API' && h2.data?.source === 'star-history.com / GitHub API' });
     } catch (e) {
       setError(e.response?.data?.error || '请求失败');
     } finally {
@@ -37,11 +38,11 @@ const ComparePage = () => {
   };
 
   const chartData = result ? {
-    labels: result.h1.map((d) => d.date.slice(5)),
+    labels: (result.h1.history || result.h1).map((d) => (d.date || '').slice(5)),
     datasets: [
       {
         label: result.r1.name,
-        data: result.h1.map((d) => d.stars),
+        data: (result.h1.history || result.h1).map((d) => d.stars),
         borderColor: '#1677ff',
         backgroundColor: 'rgba(22, 119, 255, 0.05)',
         fill: true,
@@ -51,7 +52,7 @@ const ComparePage = () => {
       },
       {
         label: result.r2.name,
-        data: result.h2.map((d) => d.stars),
+        data: (result.h2.history || result.h2).map((d) => d.stars),
         borderColor: '#ff4d4f',
         backgroundColor: 'rgba(255, 77, 79, 0.05)',
         fill: true,
@@ -163,7 +164,7 @@ const ComparePage = () => {
               </Card>
             </Col>
           </Row>
-          <Card title="90天 Star 增长趋势对比" style={{
+          <Card title={result.real ? 'Star 增长趋势对比（真实数据）' : 'Star 增长趋势对比（参考：模拟数据）'} style={{
             marginBottom: 24,
             background: 'var(--bg-card)',
             backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',

@@ -36,6 +36,45 @@ const formatDays = (days) => {
   return `${Math.floor(days / 365)} 年前`;
 };
 
+// 详情字段的中文标签 + 格式化策略
+const DETAIL_FORMATTERS = {
+  days_since_push: (v) => formatDays(v),
+  days_since_release: (v) => formatDays(v),
+  release_frequency_days: (v) => `约 ${v} 天`,
+  open_issues_ratio: (v) => `${(v * 100).toFixed(2)}%`,
+  days_since_create: (v) => formatDays(v),
+  stars: (v) => (typeof v === 'number' ? v.toLocaleString() : v),
+  forks: (v) => (typeof v === 'number' ? v.toLocaleString() : v),
+  archived: (v) => (v ? '已归档' : '未归档'),
+  has_readme: (v) => (v ? '✓' : '✗'),
+  has_contributing: (v) => (v ? '✓' : '✗'),
+  has_license: (v) => (v ? '✓' : '✗'),
+  has_code_of_conduct: (v) => (v ? '✓' : '✗'),
+  topic_diversity: (v) => `${v} 个`,
+};
+
+const DETAIL_LABELS = {
+  days_since_push: '最近推送',
+  days_since_release: '最近发布',
+  release_frequency_days: '发布间隔',
+  open_issues_ratio: '未关 Issue 比',
+  days_since_create: '仓库年龄',
+  stars: 'Stars',
+  forks: 'Forks',
+  archived: '归档状态',
+  has_readme: 'README',
+  has_contributing: '贡献指南',
+  has_license: '许可证',
+  has_code_of_conduct: '行为准则',
+  topic_diversity: '话题数',
+};
+
+const formatDetail = (key, value) => {
+  if (typeof value === 'boolean' && !DETAIL_FORMATTERS[key]) return value ? '✓' : '✗';
+  if (DETAIL_FORMATTERS[key]) return DETAIL_FORMATTERS[key](value);
+  return String(value);
+};
+
 const computeFallback = (repo) => {
   const stars = repo.stars || repo.forks || 0;
   let score;
@@ -88,7 +127,7 @@ const DimensionRow = ({ icon, name, score, weight, goal, question, details }) =>
               fontSize: 9, padding: '1px 5px', borderRadius: 8,
               background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)',
             }}>
-              {k.replace(/_/g, ' ')}: {typeof v === 'boolean' ? (v ? '✓' : '✗') : v}
+              {DETAIL_LABELS[k] || k.replace(/_/g, ' ')}: {formatDetail(k, v)}
             </span>
           ))}
         </div>
@@ -193,7 +232,9 @@ const HealthBadge = ({ health, repo }) => {
 
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', margin: '4px 0' }} />
 
-      <div><ClockCircleOutlined style={{ marginRight: 4 }} />最近推送: {formatDays(effectiveHealth.days_since_push)}</div>
+      {effectiveHealth.days_since_push != null && (
+        <div><ClockCircleOutlined style={{ marginRight: 4 }} />最近推送: {formatDays(effectiveHealth.days_since_push)}</div>
+      )}
 
       {effectiveHealth.days_since_release != null && (
         <div>📦 最近发布: {formatDays(effectiveHealth.days_since_release)}</div>

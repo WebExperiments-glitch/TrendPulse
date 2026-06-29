@@ -51,6 +51,13 @@ def _score_by_threshold(value, thresholds):
     return thresholds[-1][1]
 
 
+def _score_by_min_threshold(value, thresholds):
+    for threshold, score in reversed(thresholds):
+        if value >= threshold:
+            return score
+    return thresholds[0][1]
+
+
 def _compute_activity_score(days_since_push, days_since_release, release_frequency_days):
     push_score = _score_by_threshold(days_since_push, [
         (7, 100), (14, 90), (30, 75), (90, 50), (180, 25), (float('inf'), 10),
@@ -94,16 +101,16 @@ def _compute_responsiveness_score(days_since_push, release_frequency_days, open_
 
 
 def _compute_maturity_score(stars, forks, days_since_create):
-    star_score = _score_by_threshold(stars, [
-        (50000, 100), (10000, 90), (5000, 80), (1000, 65), (100, 45), (10, 25), (float('inf'), 10),
+    star_score = _score_by_min_threshold(stars, [
+        (10, 10), (100, 25), (1000, 45), (5000, 65), (10000, 80), (50000, 90), (100000, 100),
     ])
 
-    fork_score = _score_by_threshold(forks, [
-        (10000, 100), (2000, 90), (500, 80), (100, 65), (20, 45), (5, 25), (float('inf'), 10),
+    fork_score = _score_by_min_threshold(forks, [
+        (5, 10), (20, 25), (100, 45), (500, 65), (2000, 80), (10000, 90), (20000, 100),
     ])
 
-    age_score = _score_by_threshold(days_since_create, [
-        (365 * 5, 100), (365 * 3, 95), (365, 80), (180, 55), (90, 35), (30, 15), (float('inf'), 5),
+    age_score = _score_by_min_threshold(days_since_create, [
+        (30, 5), (90, 15), (180, 35), (365, 55), (365 * 3, 80), (365 * 5, 95), (365 * 10, 100),
     ])
 
     return min(100, int(star_score * 0.5 + fork_score * 0.25 + age_score * 0.25))
@@ -123,7 +130,8 @@ def _compute_maintenance_score(open_issues_ratio, archived, has_readme):
 
 
 def _compute_inclusivity_score(has_contributing, has_license, has_code_of_conduct, topic_diversity):
-    score = 30
+    # 基础分 0：避免空仓库也能拿分
+    score = 0
     if has_contributing:
         score += 25
     if has_license:
@@ -199,8 +207,9 @@ def compute_chaoss_health(owner_repo, repo_data=None):
     has_readme = bool(repo_data.get('description', ''))
 
     now = datetime.now(timezone.utc)
-    days_since_push = (now - datetime.strptime(pushed_at[:10], '%Y-%m-%d')).days if pushed_at else 999
-    days_since_create = max((now - datetime.strptime(created_at[:10], '%Y-%m-%d')).days if created_at else 1, 1)
+    # strptime 返回的是 naive datetime，需要补上 UTC 时区才能与 now 相减
+    days_since_push = (now - datetime.strptime(pushed_at[:10], '%Y-%m-%d').replace(tzinfo=timezone.utc)).days if pushed_at else 999
+    days_since_create = max((now - datetime.strptime(created_at[:10], '%Y-%m-%d').replace(tzinfo=timezone.utc)).days if created_at else 1, 1)
 
     total = max(stars + forks, 1)
     open_issues_ratio = open_issues / total

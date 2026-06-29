@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { message } from 'antd';
 import { getDaily, getWeekly, getRising, getDeclining } from '../api/api';
 
 const WatchContext = createContext();
@@ -53,11 +54,15 @@ export const WatchProvider = ({ children }) => {
 
       setAlerts(newAlerts);
       localStorage.setItem(ALERTS_KEY, JSON.stringify({ time: Date.now(), alerts: newAlerts }));
-    } catch {
+    } catch (err) {
+      // 至少读出本地缓存，避免 UI 看到空白
       try {
         const cached = JSON.parse(localStorage.getItem(ALERTS_KEY) || '{}');
         if (cached.alerts) setAlerts(cached.alerts);
-      } catch {}
+        else message.warning('关注列表刷新失败，请稍后再试');
+      } catch {
+        message.warning('关注列表刷新失败，请稍后再试');
+      }
     } finally {
       checkingRef.current = false;
     }

@@ -57,7 +57,7 @@ const SearchPage = () => {
         <Spin size="large" description="搜索中..." />
       ) : error ? (
         <Alert title={error} type="error" showIcon action={
-          <button onClick={() => window.location.reload()} style={{ marginLeft: 8, cursor: 'pointer' }}>
+          <button onClick={() => query && handleSearch(query)} style={{ marginLeft: 8, cursor: 'pointer' }}>
             重试
           </button>
         } />

@@ -1,19 +1,27 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-import requests
+import re
 import os
 import json
 import random
 import math
-import re
+import threading
 from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import requests
+
+app = Flask(__name__)
+# 允许所有 localhost/127.0.0.1 的任意端口（开发场景），生产环境应在反向代理处收敛来源
+# flask-cors 6.x 使用 try_match_any_pattern，支持正则字符串
+CORS(app, origins=[
+    r'^https?://localhost(:\d+)?$',
+    r'^https?://127\.0\.0\.1(:\d+)?$',
+])
 from models import storage, HISTORY_DIR
 from tasks import start_scheduler
 from scraper import GitHubTrendingScraper
 from chaoss_health import compute_chaoss_health, CHAOSS_METRICS
-
-app = Flask(__name__)
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
+from star_history import fetch_real_star_history
 
 scheduler = start_scheduler()
 
@@ -93,9 +101,8 @@ def _classify_decline_reason(repo_info, readme_text):
     if repo_info.get('archived'):
         reasons.append({'type': 'archived', 'label': '已归档', 'color': 'default'})
     if repo_info.get('pushed_at'):
-        from datetime import datetime as dt
-        pushed = dt.strptime(repo_info['pushed_at'], '%Y-%m-%dT%H:%M:%SZ')
-        months_inactive = (dt.now() - pushed).days // 30
+        pushed = datetime.strptime(repo_info['pushed_at'], '%Y-%m-%dT%H:%M:%SZ')
+        months_inactive = (datetime.now() - pushed).days // 30
         if months_inactive >= 6:
             reasons.append({'type': 'inactive', 'label': f'停更{months_inactive}个月', 'color': 'warning'})
         elif months_inactive >= 3:
@@ -271,8 +278,41 @@ def get_star_history():
     period = request.args.get('period', 'daily')
     days = request.args.get('days', 90, type=int)
     days = min(days, 365)
+    repo = request.args.get('repo', '')
+
+    if repo:
+        try:
+            real_history = fetch_real_star_history(repo, days)
+            if real_history:
+                return jsonify({
+                    'history': real_history,
+                    'source': 'star-history.com / GitHub API',
+                    'count': len(real_history),
+                })
+        except Exception:
+            pass
+
     history = generate_star_history(current_stars, period, days)
-    return jsonify(history)
+    return jsonify({'history': history, 'source': 'simulated', 'count': len(history)})
+
+
+@app.route('/api/repo/real-star-history')
+def get_real_star_history():
+    repo = request.args.get('repo', '')
+    days = request.args.get('days', 365, type=int)
+    days = min(days, 730)
+    if not repo:
+        return jsonify({'error': '请提供 repo 参数'}), 400
+
+    history = fetch_real_star_history(repo, days)
+    if history:
+        return jsonify({
+            'repo': repo,
+            'history': history,
+            'source': 'star-history.com / GitHub API',
+            'count': len(history),
+        })
+    return jsonify({'error': '无法获取真实 Star 历史', 'repo': repo}), 404
 
 @app.route('/api/repo/detail')
 def get_repo_detail():
@@ -442,7 +482,9 @@ def search():
                 })
             return jsonify(result)
         elif resp.status_code == 403:
-            return jsonify({'error': 'GitHub API rate limit exceeded'}), 429
+            return jsonify({'error': 'GitHub API rate limit exceeded'}), 403
+        elif resp.status_code == 422:
+            return jsonify({'error': '搜索关键词无效，请尝试其他关键词'}), 400
         else:
             return jsonify({'error': f'GitHub API error: {resp.status_code}'}), 500
     except requests.exceptions.RequestException as e:
@@ -459,6 +501,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 _health_cache = {}
 _health_cache_lock = threading.Lock()
+_health_inflight = {}
+_health_inflight_lock = threading.Lock()
+
 
 def _get_cached_health(owner_repo):
     with _health_cache_lock:
@@ -467,14 +512,58 @@ def _get_cached_health(owner_repo):
             return entry['data']
     return None
 
+
 def _set_cached_health(owner_repo, data):
     with _health_cache_lock:
         _health_cache[owner_repo] = {'data': data, 'ts': datetime.now(timezone.utc)}
 
+
 def _fetch_repo_info(owner_repo):
+    # 1) 命中缓存
     cached = _get_cached_health(owner_repo)
     if cached is not None:
         return cached
+
+    # 2) 合并同 key 的并发请求：首个请求真正查 API，其余线程等待其结果
+    with _health_inflight_lock:
+        existing = _health_inflight.get(owner_repo)
+        if existing is None:
+            _health_inflight[owner_repo] = []
+            creator = True
+        else:
+            creator = False
+            event = threading.Event()
+            slot = {'event': event, 'result': None}
+            existing.append(slot)
+
+    if not creator:
+        event = slot['event']
+        event.wait(timeout=15)
+        return slot['result']
+
+    # 3) 真正执行抓取
+    try:
+        result = _do_fetch_repo_info(owner_repo)
+        # 把结果广播给所有等待的线程
+        with _health_inflight_lock:
+            waiters = _health_inflight.pop(owner_repo, [])
+        for slot in waiters:
+            slot['result'] = result
+            slot['event'].set()
+        return result
+    except Exception:
+        with _health_inflight_lock:
+            waiters = _health_inflight.pop(owner_repo, [])
+        for slot in waiters:
+            slot['event'].set()
+        return None
+    finally:
+        # 保险：极端情况下兜底清理
+        with _health_inflight_lock:
+            _health_inflight.pop(owner_repo, None)
+
+
+def _do_fetch_repo_info(owner_repo):
     try:
         headers = dict(GITHUB_API_HEADERS)
         github_token = os.environ.get('GITHUB_TOKEN')
@@ -535,44 +624,52 @@ def _fetch_repo_info(owner_repo):
         release_frequency_days = None
         days_since_release = None
 
-        if github_token:
-            try:
-                releases_url = f'https://api.github.com/repos/{owner_repo}/releases?per_page=5'
-                releases_resp = requests.get(releases_url, headers=headers, timeout=10)
-                if releases_resp.status_code == 200:
-                    releases = releases_resp.json()
-                    if releases:
-                        release_count = len(releases)
-                        latest_release_date = releases[0].get('published_at', '')
-                        days_since_release = (datetime.now(timezone.utc) - datetime.strptime(latest_release_date[:10], '%Y-%m-%d')).days if latest_release_date else None
-                        dates = sorted([r.get('published_at', '') for r in releases if r.get('published_at')], reverse=True)
-                        if len(dates) >= 2:
-                            first = datetime.strptime(dates[-1][:10], '%Y-%m-%d')
-                            last = datetime.strptime(dates[0][:10], '%Y-%m-%d')
-                            total_days = (last - first).days
-                            release_frequency_days = round(total_days / (len(dates) - 1))
+        try:
+            releases_url = f'https://api.github.com/repos/{owner_repo}/releases?per_page=5'
+            releases_resp = requests.get(releases_url, headers=headers, timeout=10)
+            if releases_resp.status_code == 200:
+                releases = releases_resp.json()
+                if releases:
+                    release_count = len(releases)
+                    latest_release_date = releases[0].get('published_at', '')
+                    days_since_release = (datetime.now(timezone.utc) - datetime.strptime(latest_release_date[:10], '%Y-%m-%d')).days if latest_release_date else None
+                    dates = sorted([r.get('published_at', '') for r in releases if r.get('published_at')], reverse=True)
+                    if len(dates) >= 2:
+                        first = datetime.strptime(dates[-1][:10], '%Y-%m-%d')
+                        last = datetime.strptime(dates[0][:10], '%Y-%m-%d')
+                        total_days = (last - first).days
+                        release_frequency_days = round(total_days / (len(dates) - 1))
 
-                        if days_since_release is not None:
-                            if days_since_release < 30:
-                                release_score = 95
-                            elif days_since_release < 90:
-                                release_score = 80
-                            elif days_since_release < 180:
-                                release_score = 60
-                            elif days_since_release < 365:
-                                release_score = 35
-                            else:
-                                release_score = 15
+                    if days_since_release is not None:
+                        if days_since_release < 30:
+                            release_score = 95
+                        elif days_since_release < 90:
+                            release_score = 80
+                        elif days_since_release < 180:
+                            release_score = 60
+                        elif days_since_release < 365:
+                            release_score = 35
+                        else:
+                            release_score = 15
 
-                        if release_frequency_days and release_frequency_days < 14:
-                            release_score = min(100, release_score + 10)
-                        elif release_frequency_days and release_frequency_days < 30:
-                            release_score = min(100, release_score + 5)
-                    else:
-                        release_score = 20
-            except Exception:
-                pass
-        else:
+                    if release_frequency_days and release_frequency_days < 14:
+                        release_score = min(100, release_score + 10)
+                    elif release_frequency_days and release_frequency_days < 30:
+                        release_score = min(100, release_score + 5)
+                else:
+                    release_score = 20
+            elif releases_resp.status_code == 403:
+                if days_since_push < 7:
+                    release_score = 75
+                elif days_since_push < 30:
+                    release_score = 60
+                elif days_since_push < 90:
+                    release_score = 40
+                elif days_since_push < 365:
+                    release_score = 20
+                else:
+                    release_score = 10
+        except Exception:
             if days_since_push < 7:
                 release_score = 75
             elif days_since_push < 30:

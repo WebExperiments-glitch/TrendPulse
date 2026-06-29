@@ -27,7 +27,7 @@ export const getWeekly = (signal) => withRetry((s) => instance.get('/trending/we
 export const getRising = (signal) => withRetry((s) => instance.get('/trending/rising', { signal: s }), 3, 1000, signal);
 export const getDeclining = (signal) => withRetry((s) => instance.get('/trending/declining', { signal: s }), 3, 1000, signal);
 export const getHottest = (signal) => withRetry((s) => instance.get('/trending/hottest', { signal: s }), 3, 1000, signal);
-export const getStarHistory = (stars, period, signal) => withRetry((s) => instance.get('/repo/star-history', { params: { stars, period }, signal: s }), 3, 1000, signal);
+export const getStarHistory = (stars, period, signal, repo) => withRetry((s) => instance.get('/repo/star-history', { params: { stars, period, ...(repo ? { repo } : {}) }, signal: s }), 3, 1000, signal);
 export const getRepoDetail = (repo, signal) => withRetry((s) => instance.get('/repo/detail', { params: { repo }, signal: s }), 3, 1000, signal);
 export const getRepoInsights = (repo, signal) => withRetry((s) => instance.get('/repo/insights', { params: { repo }, signal: s }), 3, 1000, signal);
 export const getRepoReleases = (repo, signal) => withRetry((s) => instance.get('/repo/releases', { params: { repo }, signal: s }), 3, 1000, signal);

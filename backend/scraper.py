@@ -1,19 +1,73 @@
 import requests
 import re
+import os
 import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 
 class GitHubTrendingScraper:
     BASE_URL = 'https://github.com/trending'
+
+    @staticmethod
+    def _enrich_pushed_at(repos):
+        repos_without_pushed = [r for r in repos if not r.get('pushed_at')]
+        if not repos_without_pushed:
+            return
+
+        headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'GitHubTrendingScraper',
+        }
+        github_token = os.environ.get('GITHUB_TOKEN')
+        if github_token:
+            headers['Authorization'] = f'token {github_token}'
+        else:
+            return
+
+        def fetch_one(repo):
+            try:
+                api_url = f'https://api.github.com/repos/{repo["name"]}'
+                resp = requests.get(api_url, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    repo['pushed_at'] = data.get('pushed_at', '')
+                elif resp.status_code == 403:
+                    raise RuntimeError('rate_limited')
+            except RuntimeError:
+                raise
+            except Exception:
+                pass
+            return repo
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(fetch_one, r) for r in repos_without_pushed]
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except RuntimeError:
+                    for f in futures:
+                        f.cancel()
+                    break
     
     @staticmethod
     def parse_stars(text):
+        if not text:
+            return 0
         text = text.strip().replace(',', '')
         if 'k' in text:
-            return int(float(text[:-1]) * 1000)
+            try:
+                return round(float(text[:-1]) * 1000)
+            except (ValueError, TypeError):
+                return 0
         elif 'm' in text:
-            return int(float(text[:-1]) * 1000000)
-        return int(text)
+            try:
+                return round(float(text[:-1]) * 1000000)
+            except (ValueError, TypeError):
+                return 0
+        try:
+            return int(text)
+        except (ValueError, TypeError):
+            return 0
     
     @staticmethod
     def fetch_trending(period='daily'):
@@ -95,21 +149,11 @@ class GitHubTrendingScraper:
                 # 使用GitHub Search API获取更多热门仓库
                 search_url = 'https://api.github.com/search/repositories'
                 # 计算过去的日期
-                if period == 'daily':
-                    days_ago = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-                elif period == 'weekly':
-                    days_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
-                else:
-                    days_ago = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
-                
-                # 根据时间范围构建搜索查询
-                if period == 'daily':
-                    q = f'stars:>1000 pushed:>={days_ago}'
-                elif period == 'weekly':
-                    q = f'stars:>1000 pushed:>={days_ago}'
-                else:
-                    q = f'stars:>1000 pushed:>={days_ago}'
-                
+                period_days = {'daily': 1, 'weekly': 7, 'monthly': 30}.get(period, 1)
+                days_ago = (datetime.datetime.now() - datetime.timedelta(days=period_days)).strftime('%Y-%m-%d')
+                # 统一的搜索条件：>=1000 stars + 在窗口内推送
+                q = f'stars:>1000 pushed:>={days_ago}'
+
                 params = {'q': q, 'sort': 'stars', 'order': 'desc', 'per_page': 50}
                 headers = {'Accept': 'application/vnd.github.v3+json'}
                 
@@ -141,7 +185,9 @@ class GitHubTrendingScraper:
         
         # 按星星数排序并返回前50个
         sorted_repos = sorted(repos, key=lambda x: x['stars'], reverse=True)
-        return sorted_repos[:50]
+        result = sorted_repos[:50]
+        GitHubTrendingScraper._enrich_pushed_at(result)
+        return result
 
     @staticmethod
     def fetch_declining():
