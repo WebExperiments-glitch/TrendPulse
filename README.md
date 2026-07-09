@@ -5,11 +5,11 @@
 <h1 align="center">TrendPulse</h1>
 
 <p align="center">
-  <strong>GitHub 开源趋势洞察平台 · V0.1.2</strong>
+  <strong>GitHub 开源趋势洞察平台 · V0.1.3</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.2-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-0.1.3-blue" alt="Version" />
   <img src="https://img.shields.io/badge/Python-3.7+-blue?logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite" />
@@ -180,6 +180,40 @@ npm run build
 # 构建产物输出到 frontend/dist/
 ```
 
+## 💿 Windows 独立可执行程序
+
+不想装 Python / Node 也能用：TrendPulse 可打包为单个 `TrendPulse.exe`，双击即启动本地服务并自动打开浏览器（默认 http://127.0.0.1:5000）。前端已内嵌在 exe 中，无需单独运行 Vite。
+
+### 使用（已构建好的 exe）
+
+1. 取得 `dist_exe/TrendPulse.exe`（仓库本地构建产物，或后续发布的 Releases）；
+2. 双击运行，等待控制台显示服务启动（首次启动会抓取 GitHub Trending 并写入数据，约数秒到十余秒）；
+3. 浏览器自动打开 http://127.0.0.1:5000 即可使用。
+
+> 数据（SQLite 数据库 `trendpulse.db` 与抓取缓存 `github_trending_data.json`）保存在
+> `%APPDATA%\Roaming\TrendPulse\`，可直接删除该目录以重置。
+> 服务仅监听本机回环地址（127.0.0.1），不会对外暴露端口。
+
+### 自己构建
+
+前置环境：Python 3.11+、Node.js 20.19+。
+
+```bash
+# 1. 构建前端
+cd frontend && npm install && npm run build && cd ..
+
+# 2. 准备 Python 环境并安装依赖 + PyInstaller
+python -m venv .venv
+. .venv/Scripts/activate        # Windows (Git Bash)
+pip install -r backend/requirements.txt pyinstaller
+
+# 3. 打包（使用仓库内的 TrendPulse.spec）
+pyinstaller TrendPulse.spec --noconfirm
+```
+
+产物位于 `dist_exe/TrendPulse.exe`（单文件，约 23 MB，已内嵌 Python 运行时、全部后端依赖与前端静态资源）。
+也可直接执行仓库根目录的 `build_exe.sh`（Linux/macOS/Git Bash）或 `build_exe.bat`（Windows CMD）一键完成上述步骤。
+
 ## 📡 API 文档
 
 ### 服务信息
@@ -292,7 +326,7 @@ TrendPulse/
 │
 └── frontend/                       # React 前端
     ├── index.html                  # HTML 入口
-    ├── package.json                # 依赖配置 (V0.1.2)
+    ├── package.json                # 依赖配置 (V0.1.3)
     ├── vite.config.js              # Vite 配置（含 API 代理）
     ├── eslint.config.js            # ESLint 配置
     └── src/
@@ -448,7 +482,18 @@ server: {
 
 ## 📋 版本更新记录
 
-### V0.1.2（当前版本） – 2026-07-09
+### V0.1.3（当前版本） – 2026-07-09
+
+新增 Windows 独立可执行程序（单文件 exe），用户无需安装 Python / Node 环境，双击即可运行。
+
+主要新增内容：
+
+- **Windows 单文件 exe**：通过 PyInstaller 将 Flask 后端与已构建的 React 前端打包为单个 `TrendPulse.exe`（约 22 MB）。双击自启本地服务（http://127.0.0.1:5000）并自动打开浏览器，使用体验等同桌面软件。
+- **数据持久化适配**：打包态下数据库与抓取数据落盘至 `%APPDATA%\Roaming\TrendPulse\`，避免单文件临时目录导致数据在多次运行间丢失。
+- **构建脚本与文档**：新增 `build_exe.sh` / `build_exe.bat` 一键打包脚本并保留 `TrendPulse.spec`；README 新增「💿 Windows 独立可执行程序」使用说明。
+- **版本号统一**：`app.py` / 前后端 `package.json` 与锁文件 / `start.bat` 版本号统一至 `0.1.3`。
+
+### V0.1.2 – 2026-07-09
 
 缺陷修复与健壮性补丁（基于 V0.1.1），修复多端点健康度/CHAOSS 评分失效、SQLite 持久化遗漏、前端海报空白与 Star 历史恒为模拟等问题。
 
@@ -519,4 +564,4 @@ server: {
 
 MIT License
 
-<p align="center"> <sub>Made with ❤️ · TrendPulse V0.1.2</sub> </p>
+<p align="center"> <sub>Made with ❤️ · TrendPulse V0.1.3</sub> </p>

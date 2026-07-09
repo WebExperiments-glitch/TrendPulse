@@ -4,7 +4,7 @@ REM Start script for GitHub trending crawler
 REM This script starts the backend and frontend servers
 
 echo =============================
-echo TrendPulse V0.1.2
+echo TrendPulse V0.1.3
 
 echo =============================
 echo.
@@ -115,7 +115,7 @@ echo.
 echo =============================
 echo Startup complete!
 echo =============================
-echo TrendPulse V0.1.2 - 开源趋势分析
+echo TrendPulse V0.1.3 - 开源趋势分析
 echo =============================
 echo Backend: http://localhost:5000
 echo Frontend: http://localhost:5173

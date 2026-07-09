@@ -3,10 +3,17 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from datetime import datetime, timedelta, timezone
 import os
+import sys
 import threading
 import json
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///trendpulse.db')
+if getattr(sys, 'frozen', False):
+    # Packaged as an exe: keep the SQLite DB in a persistent, writable location.
+    _data_dir = os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming', 'TrendPulse')
+    os.makedirs(_data_dir, exist_ok=True)
+    DATABASE_URL = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(_data_dir, "trendpulse.db")}'
+else:
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///trendpulse.db')
 
 engine = create_engine(
     DATABASE_URL,

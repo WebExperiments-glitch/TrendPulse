@@ -1,10 +1,18 @@
 import json
 import os
+import sys
 import threading
 from datetime import datetime, timedelta
 
-STORAGE_FILE = 'github_trending_data.json'
-HISTORY_DIR = 'history'
+if getattr(sys, 'frozen', False):
+    # Packaged as an exe: keep data in a persistent, writable location.
+    _data_dir = os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming', 'TrendPulse')
+    os.makedirs(_data_dir, exist_ok=True)
+    HISTORY_DIR = os.path.join(_data_dir, 'history')
+    STORAGE_FILE = os.path.join(_data_dir, 'github_trending_data.json')
+else:
+    HISTORY_DIR = 'history'
+    STORAGE_FILE = 'github_trending_data.json'
 
 
 class MemoryStorage:

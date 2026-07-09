@@ -1,6 +1,6 @@
 {
   "name": "trendpulse-mcp-server",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "TrendPulse MCP Server - GitHub trending analytics for AI assistants with CHAOSS health metrics",
   "type": "module",
   "main": "dist/index.js",

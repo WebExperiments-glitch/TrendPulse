@@ -1,12 +1,13 @@
 import re
 import os
+import sys
 import json
 import random
 import math
 import threading
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory, abort
 from flask_cors import CORS
 import requests
 
@@ -27,7 +28,7 @@ scheduler = start_scheduler()
 
 GITHUB_API_HEADERS = {'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'GithubTrendingAnalyzer'}
 
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 APP_NAME = 'TrendPulse'
 
 def generate_star_history(current_stars, period, days=90):
@@ -1419,6 +1420,48 @@ def get_chaoss_metrics():
     })
 
 
+# ---------------------------------------------------------------------------
+# Serve the built frontend (used when packaged as a Windows exe via PyInstaller)
+# ---------------------------------------------------------------------------
+def _get_dist_dir():
+    if getattr(sys, 'frozen', False):
+        # PyInstaller extracts bundled files into sys._MEIPASS
+        base = sys._MEIPASS
+    else:
+        # Development layout: <project_root>/frontend/dist
+        base = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(base, '..', 'frontend', 'dist')
+    return os.path.join(base, 'frontend', 'dist')
+
+
+_DIST_DIR = _get_dist_dir()
+
+
+@app.route('/')
+def serve_index():
+    return send_from_directory(_DIST_DIR, 'index.html')
+
+
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory(os.path.join(_DIST_DIR, 'assets'), filename)
+
+
+@app.route('/<path:path>')
+def serve_spa(path):
+    if path.startswith('api'):
+        abort(404)
+    candidate = os.path.join(_DIST_DIR, path)
+    if os.path.isfile(candidate):
+        return send_from_directory(_DIST_DIR, path)
+    return send_from_directory(_DIST_DIR, 'index.html')
+
+
 if __name__ == '__main__':
     # Start the Flask server
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    if getattr(sys, 'frozen', False):
+        # Packaged exe: open the default browser automatically after startup.
+        import webbrowser
+        import threading
+        threading.Timer(1.5, lambda: webbrowser.open('http://127.0.0.1:5000')).start()
+    app.run(host='127.0.0.1', port=5000, debug=False)
