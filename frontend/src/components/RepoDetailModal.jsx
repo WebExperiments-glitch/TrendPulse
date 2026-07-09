@@ -31,7 +31,7 @@ const RepoDetailModal = ({ repo, visible, onClose }) => {
     Promise.allSettled([
       getRepoDetail(repoName).then((r) => r.data).catch(() => null),
       getRepoReleases(repoName).then((r) => r.data).catch(() => []),
-      getStarHistory(repo.stars, repo.period || 'daily').then((r) => r.data).catch(() => null),
+      getStarHistory(repo.stars, repo.period || 'daily', null, repoName).then((r) => r.data).catch(() => null),
       getRepoHistory(repoName, 30).then((r) => r.data).catch(() => null),
     ]).then(([d, rl, h, rh]) => {
       if (d.status === 'fulfilled') setDetail(d.value);

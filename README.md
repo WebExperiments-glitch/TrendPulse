@@ -5,11 +5,11 @@
 <h1 align="center">TrendPulse</h1>
 
 <p align="center">
-  <strong>GitHub 开源趋势洞察平台 · V0.1.1</strong>
+  <strong>GitHub 开源趋势洞察平台 · V0.1.2</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.1-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-0.1.2-blue" alt="Version" />
   <img src="https://img.shields.io/badge/Python-3.7+-blue?logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite" />
@@ -93,7 +93,7 @@ graph TB
         API["API 路由层<br/>/api/trending/*<br/>/api/repo/*<br/>/api/summary<br/>/api/search"]
         Scraper["数据抓取层<br/>GitHubTrendingScraper<br/>GitHub Search API"]
         Scheduler["定时任务<br/>APScheduler<br/>1h / 2h / 3h / 4h 间隔"]
-        Storage["数据存储<br/>MemoryStorage<br/>JSON + History Snapshots"]
+        Storage["数据存储<br/>SQLite (SQLAlchemy)<br/>+ JSON 历史快照"]
     end
 
     subgraph External["外部服务"]
@@ -110,6 +110,9 @@ graph TB
 ```
 
 ## 🛠 技术栈
+
+### 前端
+
 | 技术 | 版本 | 用途 |
 |------|------|------|
 | React | 19.x | UI 框架 |
@@ -119,75 +122,74 @@ graph TB
 | Chart.js + react-chartjs-2 | 4.x / 5.x | 数据可视化 |
 | Axios | 1.x | HTTP 请求（含自动重试） |
 
+### 后端
+
 | 技术 | 版本 | 用途 |
 |------|------|------|
 | Python | 3.7+ | 运行环境 |
 | Flask | 3.x | Web 框架 |
 | Flask-CORS | - | 跨域支持 |
+| SQLAlchemy | 2.x | ORM / SQLite 持久化 |
 | BeautifulSoup4 | - | HTML 解析（Trending 页面） |
 | APScheduler | - | 定时任务调度 |
 | Requests | - | HTTP 请求 |
 | python-dateutil | - | 日期计算 |
 
-技术	版本	用途
-Python	3.7+	运行环境
-Flask	3.x	Web 框架
-Flask-CORS	-	跨域支持
-BeautifulSoup4	-	HTML 解析（Trending 页面）
-APScheduler	-	定时任务调度
-Requests	-	HTTP 请求
-python-dateutil	-	日期计算
 ## 🚀 快速开始
-环境要求
-Python 3.7+
 
-Node.js 16+
+### 环境要求
 
-npm
+- Python 3.7+
+- Node.js 20.19+（或 22.12+，Vite 8 要求）
+- npm
 
-方式一：一键启动（推荐）
-bash
-# Windows 用户双击运行
-start.bat
-脚本自动完成：
+### 方式一：一键启动（推荐）
 
-检查端口 5000 / 5173 是否可用
+Windows 用户双击运行 `start.bat`，脚本自动完成：
 
-安装缺失依赖
+1. 检查端口 5000 / 5173 是否可用
+2. 安装缺失依赖
+3. 启动后端和前端服务
+4. 自动打开浏览器
 
-启动后端和前端服务
+### 方式二：手动启动
 
-自动打开浏览器
+**1. 启动后端**
 
-方式二：手动启动
-1. 启动后端
-
-bash
+```bash
 cd backend
 pip install -r requirements.txt
 python app.py
-后端运行在 http://localhost:5000
+# 后端运行在 http://localhost:5000
+```
 
-2. 启动前端
+**2. 启动前端**
 
-bash
+```bash
 cd frontend
 npm install
 npm run dev
-前端运行在 http://localhost:5173
+# 前端运行在 http://localhost:5173
+```
 
-生产构建
-bash
+### 生产构建
+
+```bash
 cd frontend
 npm run build
-构建产物输出到 frontend/dist/。
+# 构建产物输出到 frontend/dist/
+```
 
 ## 📡 API 文档
-服务信息
+
+### 服务信息
+
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | /api/version | GET | 获取应用名称与版本号 |
-趋势数据
+
+### 趋势数据
+
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | /api/trending/daily | GET | 每日热点（Top 50） |
@@ -195,7 +197,9 @@ npm run build
 | /api/trending/rising | GET | 上升趋势（Top 50） |
 | /api/trending/declining | GET | 下降趋势（Top 50） |
 | /api/trending/hottest | GET | 跨榜热度（去重合并日/周/上升榜） |
-仓库详情
+
+### 仓库详情
+
 | 端点 | 方法 | 参数 | 描述 |
 |------|------|------|------|
 | /api/repo/detail | GET | repo (owner/repo) | 仓库基本信息（含 pushed_at、archived） |
@@ -207,34 +211,41 @@ npm run build
 | /api/repos/health | POST | { "repos": [...] } | 批量仓库健康度评分（旧版，带 1 小时缓存） |
 | /api/repos/chaoss-health | POST | { "repos": [...] } | CHAOSS 五维健康度评分（GQM 框架） |
 | /api/chaoss/metrics | GET | - | 返回 CHAOSS 指标框架定义 |
-搜索与对比
+
+### 搜索与对比
+
 | 端点 | 方法 | 参数 | 描述 |
 |------|------|------|------|
 | /api/search | GET | q | GitHub 仓库搜索 |
 | /api/compare | GET | repo1, repo2 | 两仓库对比 |
-智能总结
+
+### 智能总结
+
 | 端点 | 方法 | 参数 | 描述 |
 |------|------|------|------|
 | /api/summary | GET | period, tone | 生成榜单趋势分析报告 |
-tone 可选值：
 
-daily — 📰 日报模式（完整分析：TOP 5、话题、排名变化、跨榜、暗流）
+`tone` 可选值：
 
-roast — 🐶 吐槽模式（幽默风格总结）
+- `daily` — 📰 日报模式（完整分析：TOP 5、话题、排名变化、跨榜、暗流）
+- `roast` — 🐶 吐槽模式（幽默风格总结）
+- `minimal` — ⚡ 极简模式（仅 TOP 3 速览）
 
-minimal — ⚡ 极简模式（仅 TOP 3 速览）
+### CHAOSS 健康度评分
 
-CHAOSS 健康度评分
 基于 CHAOSS（Community Health Analytics for Open Source Software）社区标准，采用 目标-问题-指标（GQM） 框架：
 
-text
+```text
 综合评分 = 活跃度 × 25% + 响应速度 × 20% + 成熟度 × 20% + 维护质量 × 20% + 社区包容性 × 15%
+```
 
 等级划分:
-  ≥ 80  → excellent (优秀)
-  ≥ 60  → healthy   (健康)
-  ≥ 40  → fair      (一般)
-  < 40  → at_risk   (风险)
+
+- ≥ 80  → excellent (优秀)
+- ≥ 60  → healthy   (健康)
+- ≥ 40  → fair      (一般)
+- < 40  → at_risk   (风险)
+
 五大 CHAOSS 维度：
 
 | 维度 | 目标 (Goal) | 关键指标 |
@@ -244,22 +255,35 @@ text
 | ⭐ 成熟度 (Maturity) | 社区规模与项目生命周期 | stargazers_count、days_since_create |
 | 🐛 维护质量 (Maintenance) | Issue/PR 管理与代码库状态 | open_issues_ratio、archived |
 | 👥 社区包容性 (Inclusivity) | 对新贡献者的友好程度 | has_contributing、has_license、topic_diversity |
+
 📡 相关 API：/api/repos/chaoss-health | /api/chaoss/metrics
 
 ## 📁 项目结构
-text
+
+```text
 TrendPulse/
 ├── start.bat                       # 一键启动脚本
 ├── README.md                       # 项目文档
+├── CONTRIBUTING.md                 # 贡献指南
 │
 ├── backend/                        # Python 后端
 │   ├── app.py                      # Flask 主应用 & 所有 API 路由
-│   ├── chaoss_health.py             # CHAOSS GQM 健康评分模块
-│   ├── models.py                   # 内存存储 + JSON 持久化 + 线程安全锁
+│   ├── chaoss_health.py            # CHAOSS GQM 健康评分模块
+│   ├── database.py                 # SQLAlchemy ORM 模型与 SQLite 持久化层
+│   ├── models.py                   # 存储层抽象（默认 SQLite，兼容内存回退）
+│   ├── models_legacy.py            # 旧版内存存储（MemoryStorage，兼容保留）
+│   ├── star_history.py             # Star 历史抓取与缓存（star-history API）
 │   ├── scraper.py                  # GitHub Trending 爬虫 & Search API
 │   ├── tasks.py                    # APScheduler 定时任务
+│   ├── config.py                   # Flask 配置（密钥 / 数据库 URI）
 │   ├── requirements.txt            # Python 依赖
-│   ├── github_trending_data.json   # 持久化数据文件
+│   ├── trendpulse.db               # SQLite 数据库文件（USE_DATABASE=true 时）
+│   ├── tests/                      # 后端单元测试（pytest）
+│   │   ├── test_app.py
+│   │   └── test_chaoss_health.py
+│   ├── test_scraper.py             # 爬虫功能测试
+│   ├── test_performance.py         # API 性能测试
+│   ├── github_trending_data.json   # 兼容用持久化数据文件
 │   └── history/                    # 历史快照目录
 │       ├── daily_*.json
 │       ├── weekly_*.json
@@ -268,7 +292,7 @@ TrendPulse/
 │
 └── frontend/                       # React 前端
     ├── index.html                  # HTML 入口
-    ├── package.json                # 依赖配置 (V0.1.1)
+    ├── package.json                # 依赖配置 (V0.1.2)
     ├── vite.config.js              # Vite 配置（含 API 代理）
     ├── eslint.config.js            # ESLint 配置
     └── src/
@@ -320,13 +344,17 @@ TrendPulse/
     ├── tsconfig.json              # TypeScript 配置
     └── src/
         └── index.ts               # MCP Server 入口（7 个 Tools）
+```
+
 ## 🔌 MCP Server
+
 TrendPulse 提供 MCP (Model Context Protocol) Server，允许 AI 助手（Claude Desktop、Cursor 等）直接调用 TrendPulse 的能力。
 
-配置方法
+### 配置方法
+
 在 AI 客户端的 MCP 配置文件中添加：
 
-json
+```json
 {
   "mcpServers": {
     "trendpulse": {
@@ -338,67 +366,76 @@ json
     }
   }
 }
-可用 Tools
-Tool	描述
-get_trending	获取每日/每周/上升/下降/跨榜热门仓库
-search_repos	GitHub 仓库搜索
-compare_repos	并排对比两个仓库
-get_chaoss_health	CHAOSS 五维健康度评分
-get_summary	AI 风格趋势分析报告（日报/吐槽/极简）
-get_chaoss_metrics_info	获取 CHAOSS 指标框架定义
-get_repo_detail	获取仓库详细信息
-使用示例
+```
+
+### 可用 Tools
+
+| Tool | 描述 |
+|------|------|
+| get_trending | 获取每日/每周/上升/下降/跨榜热门仓库 |
+| search_repos | GitHub 仓库搜索 |
+| compare_repos | 并排对比两个仓库 |
+| get_chaoss_health | CHAOSS 五维健康度评分 |
+| get_summary | AI 风格趋势分析报告（日报/吐槽/极简） |
+| get_chaoss_metrics_info | 获取 CHAOSS 指标框架定义 |
+| get_repo_detail | 获取仓库详细信息 |
+
+### 使用示例
+
 在支持的 AI 客户端中直接对话：
 
-"帮我分析一下最近一周 AI 领域增长最快的项目"
-
-"对比一下 langchain 和 llamaindex 的社区健康度"
-
-"用 CHAOSS 框架评估 pytorch/pytorch 的项目健康度"
+- "帮我分析一下最近一周 AI 领域增长最快的项目"
+- "对比一下 langchain 和 llamaindex 的社区健康度"
+- "用 CHAOSS 框架评估 pytorch/pytorch 的项目健康度"
 
 ## 🎨 设计风格
+
 玻璃态（Glass Morphism） 设计语言：
 
-半透明卡片 — backdrop-filter: blur() + saturate() 毛玻璃效果
-
-渐变点缀 — 蓝-紫-粉渐变用于顶部装饰条、按钮、海报
-
-微交互 — 卡片悬浮上移、按钮缩放、渐变条渐显
-
-CSS 变量体系 — 统一管理颜色、阴影、圆角、过渡时间
-
-入场动画 — fadeInUp 关键帧，卡片依次淡入上移
-
-暗色模式 — 完整亮色/暗色主题切换
+- 半透明卡片 — backdrop-filter: blur() + saturate() 毛玻璃效果
+- 渐变点缀 — 蓝-紫-粉渐变用于顶部装饰条、按钮、海报
+- 微交互 — 卡片悬浮上移、按钮缩放、渐变条渐显
+- CSS 变量体系 — 统一管理颜色、阴影、圆角、过渡时间
+- 入场动画 — fadeInUp 关键帧，卡片依次淡入上移
+- 暗色模式 — 完整亮色/暗色主题切换
 
 ## ⚙️ 配置说明
-GitHub Token（可选）
-设置环境变量 GITHUB_TOKEN 提升 API 调用限额：
 
-模式	限额
-未认证	60 次/小时
-已认证	5,000 次/小时
-bash
+### GitHub Token（可选）
+
+设置环境变量 `GITHUB_TOKEN` 提升 API 调用限额：
+
+| 模式 | 限额 |
+|------|------|
+| 未认证 | 60 次/小时 |
+| 已认证 | 5,000 次/小时 |
+
+```bash
 # Windows PowerShell
 $env:GITHUB_TOKEN = "ghp_xxxxxxxxxxxx"
 
 # Linux / macOS
 export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
+```
+
 拥有 Token 时还将解锁 Release 发布频率分析 功能。
 
-定时任务频率
+### 定时任务频率
+
 | 数据类型 | 更新间隔 | 最低数据量要求 |
-| ---------- |
+| ---------- | ---------- | ---------- |
 | 每日热点 | 每 1 小时 | ≥ 30 个仓库 |
 | 上升趋势 | 每 2 小时 | ≥ 30 个仓库 |
 | 每周热点 | 每 3 小时 | ≥ 30 个仓库 |
 | 下降趋势 | 每 4 小时 | ≥ 30 个仓库 |
+
 每次更新前自动保存历史快照，支持周/月环比分析。
 
-前端代理
-vite.config.js 已配置开发代理：
+### 前端代理
 
-javascript
+`vite.config.js` 已配置开发代理：
+
+```javascript
 server: {
   proxy: {
     '/api': {
@@ -407,43 +444,50 @@ server: {
     },
   },
 }
+```
+
 ## 📋 版本更新记录
-V0.1.1（当前版本） – 2026-06-29
+
+### V0.1.2（当前版本） – 2026-07-09
+
+缺陷修复与健壮性补丁（基于 V0.1.1），修复多端点健康度/CHAOSS 评分失效、SQLite 持久化遗漏、前端海报空白与 Star 历史恒为模拟等问题。
+
+主要修复内容：
+
+- **后端核心**：修复 `datetime` 时区（aware/naive）类型错误，解决 `/api/repos/health` 对真实仓库返回空、CHAOSS 五维评分漏算 release 维度的问题（`app.py` / `chaoss_health.py`）。
+- **数据持久化**：`UnifiedStorage` 单仓库写入现正确落库到 SQLite，默认数据不再因重启丢失（`models.py`）。
+- **API 健壮性**：迁移提示关键词匹配修正；GitHub 返回 `null` 的 `description` 统一归一为空字符串（`app.py`）。
+- **Star 历史**：`star_history` 内存缓存此前只读取不写入，现已正确填充（`star_history.py`）。
+- **前端**：修复海报首次打开空白（绘制依赖数组缺 `selected`）；仓库详情页 Star 走势现正确请求真实历史而非恒为模拟（`PosterGenerator.jsx` / `RepoDetailModal.jsx`）。
+
+### V0.1.1 – 2026-06-29
+
 本次版本为缺陷修复补丁，提升了稳定性与健壮性，无新增功能，完全兼容 V0.1.0。
 
 主要修复内容：
 
-CORS 跨域：后端白名单支持所有本地开发端口（如 5174），避免因端口变化导致请求被拦截。
-
-UI 细节：健康徽章 tooltip 中的比例值自动格式化为百分比，布尔值显示为图标，增强可读性。
-
-并发性能：相同仓库的并发请求共享同一网络调用，避免重复消耗 GitHub API 配额。
-
-评分逻辑：CHAOSS 包容性维度最低分从 30 调整为 0，空仓库评分更加合理。
-
-误导性标题：对比页“90 天增长趋势”改为“Star 走势参考（模拟）”，消除误解。
-
-错误处理：搜索 API 正确返回 403 状态码；前端重试不再刷新页面，改为重新搜索。
-
-安全性：HTML 导出时对用户内容进行转义，防止 XSS 注入。
-
-数值精度：1.2k 格式的 Star 数量解析修正，避免截断误差。
-
-其他改进：空 Token 不再发送 Authorization 头；models.py 空值保护；部分组件避免不必要的重复请求。
+- CORS 跨域：后端白名单支持所有本地开发端口（如 5174），避免因端口变化导致请求被拦截。
+- UI 细节：健康徽章 tooltip 中的比例值自动格式化为百分比，布尔值显示为图标，增强可读性。
+- 并发性能：相同仓库的并发请求共享同一网络调用，避免重复消耗 GitHub API 配额。
+- 评分逻辑：CHAOSS 包容性维度最低分从 30 调整为 0，空仓库评分更加合理。
+- 误导性标题：对比页“90 天增长趋势”改为“Star 走势参考（模拟）”，消除误解。
+- 错误处理：搜索 API 正确返回 403 状态码；前端重试不再刷新页面，改为重新搜索。
+- 安全性：HTML 导出时对用户内容进行转义，防止 XSS 注入。
+- 数值精度：1.2k 格式的 Star 数量解析修正，避免截断误差。
+- 其他改进：空 Token 不再发送 Authorization 头；`models.py` 空值保护；部分组件避免不必要的重复请求。
 
 ## 🤝 贡献指南
+
 开发流程
-Fork 本仓库
 
-创建特性分支：git checkout -b feature/amazing-feature
+1. Fork 本仓库
+2. 创建特性分支：`git checkout -b feature/amazing-feature`
+3. 提交更改：`git commit -m 'feat: add amazing feature'`
+4. 推送分支：`git push origin feature/amazing-feature`
+5. 提交 Pull Request
 
-提交更改：git commit -m 'feat: add amazing feature'
+### Commit 规范
 
-推送分支：git push origin feature/amazing-feature
-
-提交 Pull Request
-
-Commit 规范
 本项目推荐 Conventional Commits：
 
 | 类型 | 说明 |
@@ -456,26 +500,23 @@ Commit 规范
 | perf: | 性能优化 |
 | test: | 测试相关 |
 | chore: | 构建/工具链 |
+
+更详细的贡献流程、代码规范与测试指南，请参阅 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
 ## 🗺 路线图 (Roadmap)
-✅ ✅ GitHub Trending 多维度榜单（日/周/上升/下降/跨榜）
 
-✅ ✅ CHAOSS 五维健康度评分（活跃度/响应速度/成熟度/维护质量/包容性）
-
-✅ ✅ AI 趋势总结（日报/吐槽/极简三种风格）
-
-✅ ✅ MCP Server 基础框架（7 个 Tools）
-
-CHAOSS 深度集成：添加 Issue Response Time、Pull Request Resolution Duration 等细分指标
-
-MCP Server 发布：集成到 Claude Desktop / Cursor 官方目录
-
-历史趋势对比：跨周期环比、同比趋势线
-
-企业级部署：Docker 化 + 数据库持久化（SQLite/PostgreSQL）
-
-多源数据融合：集成 GitStats、OpenSSF Scorecard 等外部数据源
+- ✅ GitHub Trending 多维度榜单（日/周/上升/下降/跨榜）
+- ✅ CHAOSS 五维健康度评分（活跃度/响应速度/成熟度/维护质量/包容性）
+- ✅ AI 趋势总结（日报/吐槽/极简三种风格）
+- ✅ MCP Server 基础框架（7 个 Tools）
+- CHAOSS 深度集成：添加 Issue Response Time、Pull Request Resolution Duration 等细分指标
+- MCP Server 发布：集成到 Claude Desktop / Cursor 官方目录
+- 历史趋势对比：跨周期环比、同比趋势线
+- 企业级部署：Docker 化 + 数据库持久化（SQLite/PostgreSQL）
+- 多源数据融合：集成 GitStats、OpenSSF Scorecard 等外部数据源
 
 ## 📄 许可证
+
 MIT License
 
-<p align="center"> <sub>Made with ❤️ · TrendPulse V0.1.1</sub> </p>
+<p align="center"> <sub>Made with ❤️ · TrendPulse V0.1.2</sub> </p>

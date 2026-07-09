@@ -27,7 +27,7 @@ scheduler = start_scheduler()
 
 GITHUB_API_HEADERS = {'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'GithubTrendingAnalyzer'}
 
-VERSION = '0.1.0'
+VERSION = '0.1.2'
 APP_NAME = 'TrendPulse'
 
 def generate_star_history(current_stars, period, days=90):
@@ -81,7 +81,7 @@ def _parse_migration_hint(readme_text):
     keywords = [
         'no longer maintained', 'deprecated', 'deprecation',
         'not maintained', 'archived', 'moved to', 'please use',
-        'please switch', 'please migrate', 'use.*instead',
+        'please switch', 'please migrate', ' instead',
         'this project is no longer',
         'this repository is no longer',
         'successor', 'superseded by',
@@ -330,7 +330,7 @@ def get_repo_detail():
             'name': data.get('full_name', owner_repo),
             'stars': data.get('stargazers_count', 0),
             'language': data.get('language'),
-            'description': data.get('description', ''),
+            'description': data.get('description') or '',
             'archived': data.get('archived', False),
             'pushed_at': data.get('pushed_at'),
             'created_at': data.get('created_at'),
@@ -375,7 +375,7 @@ def compare_repos():
                     'name': r.get('full_name', repo),
                     'stars': r.get('stargazers_count', 0),
                     'language': r.get('language'),
-                    'description': r.get('description', ''),
+                    'description': r.get('description') or '',
                     'archived': r.get('archived', False),
                     'pushed_at': r.get('pushed_at'),
                     'created_at': r.get('created_at'),
@@ -412,7 +412,7 @@ def get_repo_insights():
             'pushed_at': repo_info.get('pushed_at'),
             'created_at': repo_info.get('created_at'),
             'language': repo_info.get('language'),
-            'description': repo_info.get('description', ''),
+            'description': repo_info.get('description') or '',
             'reasons': reasons,
             'migration_hint': _parse_migration_hint(readme_text),
         })
@@ -583,8 +583,8 @@ def _do_fetch_repo_info(owner_repo):
         forks = data.get('forks_count', 0)
         archived = data.get('archived', False)
 
-        days_since_push = (datetime.now(timezone.utc) - datetime.strptime(pushed_at[:10], '%Y-%m-%d')).days if pushed_at else 999
-        days_since_create = max((datetime.now(timezone.utc) - datetime.strptime(created_at[:10], '%Y-%m-%d')).days if created_at else 1, 1)
+        days_since_push = (datetime.now(timezone.utc) - datetime.strptime(pushed_at[:10], '%Y-%m-%d').replace(tzinfo=timezone.utc)).days if pushed_at else 999
+        days_since_create = max((datetime.now(timezone.utc) - datetime.strptime(created_at[:10], '%Y-%m-%d').replace(tzinfo=timezone.utc)).days if created_at else 1, 1)
 
         activity = 100 if days_since_push < 7 else (80 if days_since_push < 30 else (55 if days_since_push < 90 else (30 if days_since_push < 180 else 10)))
 
@@ -632,7 +632,7 @@ def _do_fetch_repo_info(owner_repo):
                 if releases:
                     release_count = len(releases)
                     latest_release_date = releases[0].get('published_at', '')
-                    days_since_release = (datetime.now(timezone.utc) - datetime.strptime(latest_release_date[:10], '%Y-%m-%d')).days if latest_release_date else None
+                    days_since_release = (datetime.now(timezone.utc) - datetime.strptime(latest_release_date[:10], '%Y-%m-%d').replace(tzinfo=timezone.utc)).days if latest_release_date else None
                     dates = sorted([r.get('published_at', '') for r in releases if r.get('published_at')], reverse=True)
                     if len(dates) >= 2:
                         first = datetime.strptime(dates[-1][:10], '%Y-%m-%d')
@@ -1008,7 +1008,7 @@ def _generate_summary(period, repos, top5, topic_top5, new_entries, dropped_entr
     for i, repo in enumerate(top5):
         name = repo.get('name', '未知')
         stars = repo.get('stars', 0)
-        desc = repo.get('description', '') or '（作者很懒，没有写描述 😴）'
+        desc = repo.get('description') or '' or '（作者很懒，没有写描述 😴）'
         if len(desc) > 80:
             desc = desc[:77] + '...'
         lines.append(f'{["🥇","🥈","🥉","4️⃣","5️⃣"][i]} **[{name}](https://github.com/{name})**')

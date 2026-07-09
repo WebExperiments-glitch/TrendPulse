@@ -28,3 +28,9 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+# 本地工具/废弃产物（不入库）
+.workbuddy/
+.codebuddy/
+_fix_result.txt
+fix_readme_all.py
+fix_readme_tables.py

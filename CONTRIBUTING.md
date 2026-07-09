@@ -78,7 +78,7 @@
 | 工具 | 最低版本 | 说明 |
 |------|----------|------|
 | Python | 3.7+ | 后端运行环境 |
-| Node.js | 16+ | 前端运行环境 |
+| Node.js | 20.19+ | 前端运行环境（Vite 8 要求） |
 | npm | 8+ | 包管理器 |
 | Git | 2.x | 版本控制 |
 
@@ -161,7 +161,7 @@ export GITHUB_TOKEN="your_github_token"
 │  │ 12 个端点│ │ 爬虫模块 │ │ 定时更新任务     │ │
 │  └──────────┘ └──────────┘ └──────────────────┘ │
 │                      │                           │
-│              MemoryStorage (JSON)                │
+│              SQLite (SQLAlchemy)                │
 └──────────────────────┼──────────────────────────┘
                        │
 ┌──────────────────────┼──────────────────────────┐
@@ -175,9 +175,12 @@ export GITHUB_TOKEN="your_github_token"
 | 文件 | 作用 | 修改频率 |
 |------|------|----------|
 | `backend/app.py` | API 路由、健康度算法、Star 历史生成 | 高 |
+| `backend/database.py` | SQLAlchemy ORM 模型与 SQLite 持久化层 | 中 |
+| `backend/models.py` | 存储层抽象（默认 SQLite，兼容内存回退） | 低 |
+| `backend/star_history.py` | Star 历史抓取与缓存 | 中 |
 | `backend/scraper.py` | GitHub Trending 页面解析 | 中 |
 | `backend/tasks.py` | 定时任务调度 | 低 |
-| `backend/models.py` | 数据存储层 | 低 |
+| `backend/config.py` | Flask 配置（密钥 / 数据库 URI） | 低 |
 | `frontend/src/api/api.js` | 前端 API 封装（含重试逻辑） | 中 |
 | `frontend/src/index.css` | CSS 变量体系 & 全局样式 | 中 |
 | `frontend/src/App.jsx` | 路由配置 & 主题 | 低 |
@@ -351,6 +354,8 @@ docs/<文档内容>       # 文档更新
 - [ ] 新功能有适当的注释说明
 - [ ] 没有引入新的 lint 错误（运行 `npm run lint`）
 - [ ] 前端构建成功（运行 `npm run build`）
+- [ ] 前端单元测试通过（运行 `npm test`）
+- [ ] 后端单元测试通过（运行 `pytest tests/`）
 - [ ] 后端服务正常启动（运行 `python app.py`）
 - [ ] PR 标题符合 Conventional Commits 规范
 - [ ] PR 描述清晰说明了改动内容和原因
@@ -391,6 +396,9 @@ Closes #123
 ```bash
 cd backend
 
+# 运行单元测试（pytest）
+pytest tests/
+
 # 测试爬虫功能
 python test_scraper.py
 
@@ -405,6 +413,9 @@ cd frontend
 
 # 代码检查
 npm run lint
+
+# 单元测试（vitest）
+npm test
 
 # 构建检查
 npm run build

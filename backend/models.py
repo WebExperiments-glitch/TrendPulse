@@ -23,7 +23,8 @@ class DBStorage:
             init_db()
 
     def add_repo(self, repo_data):
-        pass
+        if _HAS_DB:
+            add_repos_batch([repo_data], repo_data.get('period'))
 
     def add_repos_batch(self, repos_data, period):
         if _HAS_DB:
@@ -74,6 +75,8 @@ class UnifiedStorage:
         return self._db is not None
 
     def add_repo(self, repo_data):
+        if self._use_db():
+            self._db.add_repo(repo_data)
         storage_legacy.add_repo(repo_data)
 
     def add_repos_batch(self, repos_data, period):

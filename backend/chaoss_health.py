@@ -228,7 +228,7 @@ def compute_chaoss_health(owner_repo, repo_data=None):
                 release_count = len(releases)
                 latest_release_date = releases[0].get('published_at', '')
                 if latest_release_date:
-                    days_since_release = (now - datetime.strptime(latest_release_date[:10], '%Y-%m-%d')).days
+                    days_since_release = (now - datetime.strptime(latest_release_date[:10], '%Y-%m-%d').replace(tzinfo=timezone.utc)).days
                 dates = sorted([r.get('published_at', '') for r in releases if r.get('published_at')], reverse=True)
                 if len(dates) >= 2:
                     first = datetime.strptime(dates[-1][:10], '%Y-%m-%d')

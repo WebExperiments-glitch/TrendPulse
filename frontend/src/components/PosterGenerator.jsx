@@ -166,8 +166,7 @@ const PosterGenerator = ({ repos, visible, onClose }) => {
     return () => {
       if (generateTimeoutRef.current) clearTimeout(generateTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, count]);
+  }, [visible, selected, repos, count]);
 
   return (
     <Modal

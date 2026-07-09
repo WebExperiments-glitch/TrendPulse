@@ -27,6 +27,7 @@ def fetch_real_star_history(repo_name, days=365):
         from database import get_star_history as db_get_star_history, save_star_history
         db_history = db_get_star_history(repo_name, days)
         if db_history:
+            _star_history_cache[repo_name] = {'ts': time.time(), 'data': db_history}
             return db_history
 
         history_url = f'{STAR_HISTORY_API}/{repo_name}'
@@ -55,12 +56,14 @@ def fetch_real_star_history(repo_name, days=365):
 
             if entries:
                 save_star_history(repo_name, entries)
+                _star_history_cache[repo_name] = {'ts': time.time(), 'data': entries}
                 cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%d')
                 return [e for e in entries if e['date'] >= cutoff]
 
         entries = _fetch_from_github_events(repo_name, current_stars, days, headers)
         if entries:
             save_star_history(repo_name, entries)
+            _star_history_cache[repo_name] = {'ts': time.time(), 'data': entries}
             return entries
 
         return None
